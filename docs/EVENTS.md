@@ -10,9 +10,13 @@ The event system provides a publish-subscribe mechanism integrated into `@deesse
 
 The context provides a `send` method to emit events. Events are typed and can carry arbitrary data.
 
-### Event Subscription (`t.on`)
+### Event Subscription (`t.on` and `.on`)
 
-Queries and mutations can subscribe to events using the `t.on` method. Subscriptions are defined at the query/mutation level and triggered when matching events are emitted.
+There are two ways to subscribe to events:
+
+1. **`t.on`** - Global listener. Listens to events emitted anywhere in the application. Useful for cross-cutting concerns like logging, analytics, or audit trails.
+
+2. **`.on`** - Query/Mutation lifecycle listener. Attaches handlers that run before/after a specific query or mutation executes (see `beforeInvoke`, `onSuccess`, `onError` in SPEC.md).
 
 ## API Reference
 
@@ -45,17 +49,46 @@ type SendOptions = {
 }
 ```
 
-### Query/Mutation: `t.on()`
+### Global Listener: `t.on()`
+
+Global event listener that subscribes to events emitted anywhere in the application.
 
 ```typescript
 type EventHandler<Ctx, Args, EventData> = (ctx: Ctx, args: Args, event: EventData) => void | Promise<void>
 
-type QueryBuilder<Ctx> = {
+type T<Ctx> = {
   on<EventName extends string, EventData = unknown>(
     event: EventName,
     handler: EventHandler<Ctx, unknown, EventData>
-  ): QueryBuilder<Ctx>
+  ): T<Ctx>
 }
+
+// Usage
+const myListener = t.on("user.created", async (ctx, args, event) => {
+  // Called whenever any query/mutation emits "user.created"
+  await ctx.db.auditLog.create({ action: "USER_CREATED", ...event.data })
+})
+```
+
+### Query/Mutation Listener: `.on()`
+
+Lifecycle listener attached to a specific query or mutation. Runs before/after that query/mutation executes.
+
+```typescript
+type Query<Ctx, Args, Output> = {
+  on(event: "beforeInvoke", handler: (ctx: Ctx, args: Args) => void | Promise<void>): Query<Ctx, Args, Output>
+  on(event: "onSuccess", handler: (ctx: Ctx, args: Args, data: Output) => void | Promise<void>): Query<Ctx, Args, Output>
+  on(event: "onError", handler: (ctx: Ctx, args: Args, error: unknown) => void | Promise<void>): Query<Ctx, Args, Output>
+}
+
+// Usage
+const getUser = t.query({
+  args: z.object({ id: z.number() }),
+  handler: async (ctx, args) => { ... }
+})
+  .on("beforeInvoke", (ctx, args) => { console.log("Fetching user", args.id) })
+  .on("onSuccess", (ctx, args, user) => { console.log("User found", user.id) })
+  .on("onError", (ctx, args, error) => { console.error("Failed", error) })
 ```
 
 ## Usage Examples
@@ -83,57 +116,49 @@ const createUser = t.mutation({
 })
 ```
 
-### Subscribing to Events
+### Global Listener: `t.on()`
+
+Subscribe to events emitted anywhere in the application:
 
 ```typescript
-const notifyAdmin = t.mutation({
-  args: z.object({}),
-  handler: async (ctx): AsyncOutcome<void> => {
-    // This mutation listens to user.created events
-    return success(undefined)
-  }
-})
-  .on("user.created", async (ctx, args, event) => {
-    // Send notification when user is created
-    await ctx.send("notification.send", {
-      to: "admin@example.com",
-      subject: "New user registration",
-      body: `User ${event.data.email} has registered.`,
-    })
+// Global listener - not attached to a specific query/mutation
+t.on("user.created", async (ctx, args, event) => {
+  // Called whenever any query/mutation emits "user.created"
+  await ctx.send("notification.send", {
+    to: "admin@example.com",
+    subject: "New user registration",
+    body: `User ${event.data.email} has registered.`,
   })
+})
 ```
 
-### Multiple Event Subscriptions
+### Multiple Global Listeners
 
 ```typescript
-const auditLog = t.query({
-  args: z.object({ userId: z.number() }),
-  handler: async (ctx, args): AsyncOutcome<AuditLog[]> => {
-    const logs = await ctx.db.auditLogs.findByUser(args.userId)
-    return success(logs)
-  }
+// Audit log listener
+t.on("user.created", async (ctx, args, event) => {
+  await ctx.db.auditLogs.create({
+    action: "USER_CREATED",
+    userId: event.data.userId,
+    timestamp: event.data.timestamp,
+  })
 })
-  .on("user.created", async (ctx, args, event) => {
-    await ctx.db.auditLogs.create({
-      action: "USER_CREATED",
-      userId: event.data.userId,
-      timestamp: event.data.timestamp,
-    })
+
+t.on("user.updated", async (ctx, args, event) => {
+  await ctx.db.auditLogs.create({
+    action: "USER_UPDATED",
+    userId: event.data.userId,
+    timestamp: event.data.timestamp,
   })
-  .on("user.updated", async (ctx, args, event) => {
-    await ctx.db.auditLogs.create({
-      action: "USER_UPDATED",
-      userId: event.data.userId,
-      timestamp: event.data.timestamp,
-    })
+})
+
+t.on("user.deleted", async (ctx, args, event) => {
+  await ctx.db.auditLogs.create({
+    action: "USER_DELETED",
+    userId: event.data.userId,
+    timestamp: event.data.timestamp,
   })
-  .on("user.deleted", async (ctx, args, event) => {
-    await ctx.db.auditLogs.create({
-      action: "USER_DELETED",
-      userId: event.data.userId,
-      timestamp: event.data.timestamp,
-    })
-  })
+})
 ```
 
 ### Namespaced Events
@@ -150,16 +175,11 @@ const orderCreated = t.mutation({
   }
 })
 
-const emailService = t.mutation({
-  args: z.object({}),
-  handler: async (ctx): AsyncOutcome<void> => {
-    return success(undefined)
-  }
+// Global listener for namespaced event
+t.on("ecommerce.order.created", async (ctx, args, event) => {
+  // Only listens to events in "ecommerce" namespace
+  await ctx.email.sendOrderConfirmation(event.data.orderId)
 })
-  .on("ecommerce.order.created", async (ctx, args, event) => {
-    // Only listens to events in "ecommerce" namespace
-    await ctx.email.sendOrderConfirmation(event.data.orderId)
-  })
 ```
 
 ### Delayed Events
@@ -216,28 +236,20 @@ export const createUser = t.mutation({
   }
 })
 
-// modules/notifications.ts
-export const notificationHandler = t.mutation({
-  args: z.object({}),
-  handler: async (ctx) => success(undefined)
-})
-  .on("user.created", async (ctx, args, event) => {
-    await ctx.send("email.send", {
-      to: event.data.user.email,
-      template: "welcome",
-    })
+// modules/notifications.ts - global listener
+t.on("user.created", async (ctx, args, event) => {
+  await ctx.send("email.send", {
+    to: event.data.user.email,
+    template: "welcome",
   })
+})
 
-// modules/analytics.ts
-export const analyticsHandler = t.mutation({
-  args: z.object({}),
-  handler: async (ctx) => success(undefined)
-})
-  .on("user.created", async (ctx, args, event) => {
-    await ctx.analytics.track("user_signup", {
-      userId: event.data.user.id,
-    })
+// modules/analytics.ts - global listener
+t.on("user.created", async (ctx, args, event) => {
+  await ctx.analytics.track("user_signup", {
+    userId: event.data.user.id,
   })
+})
 
 // main.ts
 const api = createAPI({
@@ -246,7 +258,6 @@ const api = createAPI({
       create: createUser,
     }),
   }),
-  plugins: [notificationHandler, analyticsHandler],
 })
 ```
 
@@ -340,23 +351,19 @@ const api = createAPI({
 ## Error Handling
 
 ```typescript
-const resilientHandler = t.mutation({
-  args: z.object({}),
-  handler: async (ctx): AsyncOutcome<void> => success(undefined)
+t.on("user.created", async (ctx, args, event) => {
+  try {
+    await ctx.externalService.notify(event.data)
+  } catch (error) {
+    // Events should not break the main flow
+    console.error("Failed to send notification:", error)
+    // Could also emit a separate error event
+    ctx.send("event.delivery_failed", {
+      originalEvent: "user.created",
+      error: error.message,
+    })
+  }
 })
-  .on("user.created", async (ctx, args, event) => {
-    try {
-      await ctx.externalService.notify(event.data)
-    } catch (error) {
-      // Events should not break the main flow
-      console.error("Failed to send notification:", error)
-      // Could also emit a separate error event
-      ctx.send("event.delivery_failed", {
-        originalEvent: "user.created",
-        error: error.message,
-      })
-    }
-  })
 ```
 
 ## Testing Events
@@ -395,13 +402,13 @@ const userEvents = executor.getEvents().filter(e => e.name.startsWith("user."))
 
 ```typescript
 // Good: Filter at subscription level
-.on("order.*", async (ctx, args, event) => {
+t.on("order.*", async (ctx, args, event) => {
   if (event.name !== "order.completed") return
   // Only handle completed orders
 })
 
 // Better: Use specific event name
-.on("order.completed", async (ctx, args, event) => {
+t.on("order.completed", async (ctx, args, event) => {
   // Only handles completed orders
 })
 ```
