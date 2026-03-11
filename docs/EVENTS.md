@@ -19,12 +19,12 @@ Queries and mutations can subscribe to events using the `t.on` method. Subscript
 ### Context: `ctx.send()`
 
 ```typescript
-interface Context {
-  send<EventData = unknown>(event: string, data: EventData): void
-  send<EventData = unknown>(event: string, data: EventData, options: SendOptions): void
+type Send = {
+  <EventData = unknown>(event: string, data: EventData): void
+  <EventData = unknown>(event: string, data: EventData, options: SendOptions): void
 }
 
-interface SendOptions {
+type SendOptions = {
   /**
    * Namespace for the event. Helps organize events by domain.
    * Default: 'default'
@@ -48,15 +48,13 @@ interface SendOptions {
 ### Query/Mutation: `t.on()`
 
 ```typescript
-interface EventHandler<Ctx, Args, EventData> {
-  (ctx: Ctx, args: Args, event: EventData): void | Promise<void>
-}
+type EventHandler<Ctx, Args, EventData> = (ctx: Ctx, args: Args, event: EventData) => void | Promise<void>
 
-interface t {
+type QueryBuilder<Ctx> = {
   on<EventName extends string, EventData = unknown>(
     event: EventName,
-    handler: EventHandler<Ctx, Args, EventData>
-  ): this
+    handler: EventHandler<Ctx, unknown, EventData>
+  ): QueryBuilder<Ctx>
 }
 ```
 
@@ -275,7 +273,7 @@ type CustomEvent<T = unknown> = {
 ### Event Listener Type
 
 ```typescript
-interface EventListener<Ctx, Args, EventData> {
+type EventListener<Ctx, Args, EventData> = {
   /**
    * Event name to subscribe to
    */
@@ -296,7 +294,7 @@ interface EventListener<Ctx, Args, EventData> {
 ### Event Payload
 
 ```typescript
-interface EventPayload<T = unknown> {
+type EventPayload<T = unknown> = {
   name: string
   data: T
   timestamp: string
