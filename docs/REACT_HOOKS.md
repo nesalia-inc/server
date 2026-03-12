@@ -2,14 +2,38 @@
 
 ## Overview
 
-`@deessejs/server/react` provides React hooks (`useQuery`, `useMutation`) that integrate the `@deessejs/server` API with React's caching and invalidation system.
+`@deessejs/server/react` provides React hooks (`useQuery`, `useMutation`) that enable simple real-time synchronization from server to client for the local user.
 
 ## Core Concept
 
-- **Queries** return a set of cache keys that should be stored
-- **Mutations** return a set of cache keys that should be invalidated
+This is a **lightweight real-time sync** system (not a full WebSocket solution):
 
-This enables automatic cache management without manual intervention.
+1. **Query** - Client subscribes to data. Query returns `keys` to store in client cache.
+2. **Mutation** - Client modifies data. Mutation returns `invalidate` keys to refetch.
+
+When a mutation executes, affected queries are automatically refetched. No complex setup, no WebSocket, no subscriptions management.
+
+```
+Client                        Server
+  │                              │
+  ├── useQuery(api.users.list) ─►│  Returns data + keys: ["users", "list"]
+  │◄──────────────────────────────│
+  │                              │
+  │  [Cache stored locally]      │
+  │                              │
+  ├── useMutation(api.user.create)
+  │          (creates user) ────►│  Returns invalidate: ["users", "list"]
+  │◄─────────────────────────────┤
+  │                              │
+  ▼  [Auto-refetch affected queries]
+```
+
+## Why This Approach?
+
+- **Simple** - No WebSocket, no complex subscriptions
+- **Server-driven** - Server decides what to invalidate, client just follows
+- **Local user only** - Syncs data for the current user, not broadcast to others
+- **Zero configuration** - Just define keys in queries/mutations
 
 ## API Reference
 
@@ -31,25 +55,13 @@ type UseQueryResult<Result> = {
   refetch: () => Promise<void>
 }
 
-type CacheKeys = Array<string | Record<string, unknown>>
-
-type QueryResult<Success> = {
-  ok: true
-  value: Success
-  keys: CacheKeys
-}
-
-type QueryResult<Success, CauseData> = {
-  ok: false
-  error: Cause<CauseData>
-  keys: CacheKeys  // Keys are still returned even on error (for partial caching)
-}
-
 function useQuery<Args, Success, CauseData>(
   query: Query<Ctx, Args, Success, CauseData>,
   options: UseQueryOptions<Args, Success>
 ): UseQueryResult<Success>
 ```
+
+**Note:** The cache keys are defined in the query definition (see `@deessejs/server` SPEC.md). The hook automatically extracts and manages these keys.
 
 ### useMutation
 
@@ -74,9 +86,11 @@ function useMutation<Args, Success, CauseData>(
 ): UseMutationResult<Args, Success>
 ```
 
-## Query Keys System
+**Note:** The invalidate keys are defined in the mutation definition. When mutation succeeds, these keys are automatically used to refetch affected queries.
 
 ### Key Format
+
+Keys are defined in `@deessejs/server` and consumed by `@deessejs/server/react`:
 
 ```typescript
 // Simple key
@@ -90,9 +104,10 @@ function useMutation<Args, Success, CauseData>(
 ["users", "detail", 1]
 ```
 
-### Query Return Keys
+### Query Keys (defined in @deessejs/server)
 
 ```typescript
+// In @deessejs/server - define keys in the query
 const getUser = t.query({
   args: z.object({ id: z.number() }),
   handler: async (ctx, args): AsyncOutcome<User> => {
@@ -114,9 +129,10 @@ const listUsers = t.query({
 })
 ```
 
-### Mutation Invalidate Keys
+### Mutation Invalidate Keys (defined in @deessejs/server)
 
 ```typescript
+// In @deessejs/server - define invalidate in the mutation
 const createUser = t.mutation({
   args: z.object({ name: z.string(), email: z.string() }),
   handler: async (ctx, args): AsyncOutcome<User> => {
@@ -512,9 +528,7 @@ export default async function UsersPage() {
 
 ## Future Considerations
 
-- Infinite queries for pagination
 - Optimistic mutation with rollback
 - Query persistence to localStorage
-- Cache warming strategies
+- Pagination support
 - Background refetching
-- React Query compatible API
