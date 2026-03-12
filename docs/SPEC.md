@@ -84,33 +84,23 @@ type Unit = undefined | null | void
 ### Context Definition
 
 ```typescript
-function defineContext<T>(initialValues: T): {
+function defineContext<T, Plugins extends Plugin<T>[]>(
+  config: {
+    initialValues: T
+    plugins?: Plugins
+  }
+): {
   t: QueryBuilder<T>
-  createContext: () => T
+  api: API
 }
-```
-
-### API Creation
-
-```typescript
-function createAPI(config: {
-  router: Router
-  plugins?: Plugin[]
-  executor?: Executor
-}): API
 ```
 
 ### Plugin Structure
 
 ```typescript
-interface Plugin {
+type Plugin<Ctx> = {
   name: string
-  context?: {
-    [key: string]: () => any
-  }
-  queries?: Record<string, Query>
-  mutations?: Record<string, Mutation>
-  onInvalidate?: string[]
+  extend: (ctx: Ctx) => Partial<Ctx>
 }
 ```
 
@@ -135,10 +125,12 @@ type Context = {
   userId: string | null
 }
 
-const { t, createContext } = defineContext<Context>({
-  db: myDatabase,
-  logger: myLogger,
-  userId: null,
+const { t, api } = defineContext({
+  initialValues: {
+    db: myDatabase,
+    logger: myLogger,
+    userId: null,
+  }
 })
 ```
 
@@ -189,34 +181,6 @@ const createUser = t.mutation({
     return success(user)
   }
 })
-```
-
-### Create API with Router
-
-```typescript
-import { createAPI } from "@deessejs/server"
-
-const api = createAPI({
-  router: t.router({
-    users: t.router({
-      get: getUser,
-      create: createUser,
-      list: t.query({
-        args: z.object({ limit: z.number().default(10) }),
-        handler: async (ctx, args): Success<User[]> => {
-          const users = await ctx.db.users.list({ limit: args.limit })
-          return success(users)
-        }
-      }),
-    }),
-    posts: t.router({
-      get: t.query({ ... }),
-      create: t.mutation({ ... }),
-    }),
-  }),
-})
-
-export { api }
 ```
 
 ### Using in Server Actions
@@ -355,7 +319,7 @@ export const cachePlugin: Plugin<Context> = {
 **Using Plugins**
 
 ```typescript
-import { createAPI, Plugin } from "@deessejs/server"
+import { defineContext, Plugin } from "@deessejs/server"
 import { authPlugin } from "./plugins/auth"
 import { cachePlugin } from "./plugins/cache"
 
@@ -364,15 +328,16 @@ type BaseContext = {
   logger: Logger
 }
 
-// Plugins extend the base context
-const plugins: Plugin<BaseContext>[] = [
-  authPlugin,
-  cachePlugin,
-]
-
-const api = createAPI({
-  router: t.router({ ... }),
-  plugins,
+// Define context with plugins
+const { t, api } = defineContext({
+  initialValues: {
+    db: myDatabase,
+    logger: myLogger,
+  },
+  plugins: [
+    authPlugin,
+    cachePlugin,
+  ],
 })
 
 // ctx now has: db, logger, userId, getUserId, setUserId, cache

@@ -132,36 +132,24 @@ export const loggerPlugin: Plugin<LoggerContext> = {
 ### Using Multiple Plugins
 
 ```typescript
-import { createAPI, Plugin, defineContext } from "@deessejs/server"
+import { defineContext, Plugin } from "@deessejs/server"
 import { authPlugin } from "./plugins/auth"
 import { cachePlugin } from "./plugins/cache"
 import { loggerPlugin } from "./plugins/logger"
 
-// Define base context
 type BaseContext = {
   db: Database
 }
 
-const { t, createContext } = defineContext<BaseContext>({
-  db: myDatabase,
-})
-
-// Combine all plugins
-const plugins: Plugin<BaseContext>[] = [
-  authPlugin,
-  cachePlugin,
-  loggerPlugin,
-]
-
-// Create API with plugins
-const api = createAPI({
-  router: t.router({
-    users: t.router({
-      get: t.query({ ... }),
-      create: t.mutation({ ... }),
-    }),
-  }),
-  plugins,
+const { t, api } = defineContext({
+  initialValues: {
+    db: myDatabase,
+  },
+  plugins: [
+    authPlugin,
+    cachePlugin,
+    loggerPlugin,
+  ],
 })
 
 // Context now has: db, userId, isAuthenticated, cache, logger
