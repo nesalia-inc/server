@@ -45,14 +45,17 @@ Component A                              Component B
 Wraps a client component with automatic cache management.
 
 ```typescript
-type ClientComponentProps<Props, Ctx> = {
-  component: (ctx: Ctx) => React.ReactNode
+import { z } from "zod"
+
+type ClientComponentProps<Props extends z.ZodType, Ctx extends ApiContext> = {
+  props: Props
+  component: (ctx: Ctx, props: z.infer<Props>) => React.ReactNode
   fallback?: React.ReactNode
 }
 
-function clientComponent<Props, Ctx extends ApiContext>(
+function clientComponent<Props extends z.ZodType, Ctx extends ApiContext>(
   config: ClientComponentProps<Props, Ctx>
-): React.ComponentType<Props>
+): React.ComponentType<z.infer<Props>>
 ```
 
 ### page
@@ -112,10 +115,10 @@ function Provider(props: ProviderProps): React.ReactElement
 ```typescript
 type ApiContext = {
   api: API
-  query: <T>(key: CacheKey[], fn: () => Promise<T>) => UseQueryResult<T>
-  mutate: <T>(fn: () => Promise<T>) => Promise<T>
 }
 ```
+
+The API methods automatically handle cache registration and invalidation.
 
 ## Usage Examples
 
@@ -145,11 +148,9 @@ import { clientComponent, Provider } from "@deessejs/server/next"
 
 export function TaskList() {
   return clientComponent({
-    props: {},
+    props: z.object({}),
     component: (ctx) => {
-      const { data, isLoading } = ctx.query(["tasks", "list"], () =>
-        ctx.api.tasks.list()
-      )
+      const { data, isLoading } = ctx.api.tasks.list()
 
       if (isLoading) return <Loading />
 
@@ -169,51 +170,59 @@ export function TaskList() {
 // app/CreateTask.tsx (Client Component)
 "use client"
 
-import { clientComponent, Provider } from "@deessejs/server/next"
+import { clientComponent } from "@deessejs/server/next"
+import { z } from "zod"
 
-export function CreateTask() {
-  const { mutate } = ctx.mutate(async () => {
-    await ctx.api.tasks.create({ title: "New task" })
-  })
+const CreateTask = clientComponent({
+  props: z.object({
+    onSuccess: z.function().optional()
+  }),
+  component: (ctx, props) => {
+    const handleSubmit = async () => {
+      await ctx.api.tasks.create({ title: "New task" })
+      // Cache is automatically invalidated, related queries will refetch
+      props.onSuccess?.()
+    }
 
-  return (
-    <form onSubmit={() => mutate()}>
-      <input name="title" />
-      <button type="submit">Create</button>
-    </form>
-  )
-}
+    return (
+      <form onSubmit={handleSubmit}>
+        <input name="title" />
+        <button type="submit">Create</button>
+      </form>
+    )
+  }
+})
 ```
 
 ### How It Works
 
-1. **Query Registration** - When `ctx.query()` is called, it registers the cache key with the shared cache context
+1. **Query Registration** - When `ctx.api.tasks.list()` is called (or any API method), it registers the cache key with the shared cache context
 
-2. **Mutation Detection** - When `ctx.mutate()` is called, it executes the mutation and automatically invalidates related cache keys
+2. **Mutation Detection** - When `ctx.api.tasks.create()` is called, it automatically invalidates related cache keys
 
 3. **Automatic Refetch** - Components that registered matching cache keys are automatically re-rendered with fresh data
 
 ### With Cache Keys
 
+Cache keys are automatically handled by the API from `@deessejs/server`. No manual key management needed.
+
 ```tsx
 // Component that queries a specific task
-clientComponent({
-  props: { taskId: number },
+const TaskDetail = clientComponent({
+  props: z.object({ taskId: z.number() }),
   component: (ctx, props) => {
-    const { data } = ctx.query(["tasks", { id: props.taskId }], () =>
-      ctx.api.tasks.get({ id: props.taskId })
-    )
+    const { data } = ctx.api.tasks.get({ id: props.taskId })
     return <TaskDetail task={data} />
   }
 })
 
 // Component that creates a task
-clientComponent({
-  props: {},
+const CreateTask = clientComponent({
+  props: z.object({}),
   component: (ctx) => {
-    const { mutate } = ctx.mutate(async () => {
+    const handleCreate = async () => {
       await ctx.api.tasks.create({ title: "New task" })
-      // Automatically invalidates:
+      // Automatically invalidates related cache keys:
       // - ["tasks", "list"]
       // - ["tasks", { id: ... }]
     })
@@ -225,45 +234,29 @@ clientComponent({
 ### Optimistic Updates
 
 ```tsx
-clientComponent({
-  props: { taskId: number },
+const EditTask = clientComponent({
+  props: z.object({ taskId: z.number() }),
   component: (ctx, props) => {
-    const { mutate, data } = ctx.mutate(async (optimisticData) => {
-      // Optimistic update
-      const result = await ctx.api.tasks.update({
-        id: props.taskId,
-        data: optimisticData
-      })
-      return result
-    }, {
-      onMutate: () => {
-        // Cancel outgoing refetches
-        // Snapshot current data
-        // Set optimistic data
-      },
-      onError: (err, variables, context) => {
-        // Rollback to snapshot
-      },
-      onSuccess: () => {
-        // Data is already fresh
-      }
-    })
+    const handleSave = async (data) => {
+      // Optimistic update handled automatically
+      await ctx.api.tasks.update({ id: props.taskId, data })
+    }
 
-    return <TaskEditor task={data} onSave={mutate} />
+    return <TaskEditor onSave={handleSave} />
   }
 })
 ```
 
+For more complex optimistic updates, the API returns result data directly.
+
 ### With Loading States
 
 ```tsx
-clientComponent({
-  props: {},
+const TaskList = clientComponent({
+  props: z.object({}),
   fallback: <Skeleton />,
   component: (ctx) => {
-    const { data, refetch, isStale } = ctx.query(["tasks", "list"], () =>
-      ctx.api.tasks.list()
-    )
+    const { data, refetch, isStale } = ctx.api.tasks.list()
 
     return (
       <div>
@@ -279,13 +272,11 @@ clientComponent({
 ### Error Handling
 
 ```tsx
-clientComponent({
-  props: {},
+const TaskList = clientComponent({
+  props: z.object({}),
   fallback: <ErrorBoundary><TaskList /></ErrorBoundary>,
   component: (ctx) => {
-    const { data, error } = ctx.query(["tasks", "list"], () =>
-      ctx.api.tasks.list()
-    )
+    const { data, error } = ctx.api.tasks.list()
 
     if (error) {
       return <div>Error: {error.message}</div>
