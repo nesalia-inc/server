@@ -143,6 +143,8 @@ const api = createAPI({
 
 ### Define Query
 
+The handler can return a `Result` (with `ok`/`err`), but it's not required. This gives flexibility for future changes.
+
 ```typescript
 import { ok, err, Result } from "@deessejs/core"
 
@@ -158,6 +160,14 @@ const getUser = t.query({
     }
 
     return ok(user, { keys: [["users", { id: args.id }]] })
+  }
+})
+
+// Handler can also return plain value (Result is optional)
+const getUserSimple = t.query({
+  args: z.object({ id: z.number() }),
+  handler: async (ctx, args) => {
+    return ctx.db.users.find(args.id)
   }
 })
 ```

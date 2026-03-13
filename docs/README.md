@@ -42,6 +42,8 @@ const { t, createAPI } = defineContext({
 
 ### Define Query
 
+The handler return type is flexible - `Result` is optional to give room for future changes.
+
 ```typescript
 import { ok, err, Result } from "@deessejs/core"
 
@@ -64,7 +66,7 @@ const createUser = t.mutation({
   args: z.object({ name: z.string(), email: z.string().email() }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
-    return success(user, { invalidate: ["users:list", "users:count"] })
+    return ok(user, { invalidate: ["users:list", "users:count"] })
   }
 })
 ```
