@@ -261,7 +261,7 @@ const TaskList = clientComponent({
     return (
       <div>
         {isStale && <Badge>Refetching...</Badge>}
-        <TaskList tasks={data} />
+        <TaskItems tasks={data} />
         <button onClick={() => refetch()}>Refresh</button>
       </div>
     )
@@ -282,7 +282,7 @@ const TaskList = clientComponent({
       return <div>Error: {error.message}</div>
     }
 
-    return <TaskList tasks={data} />
+    return <TaskItems tasks={data} />
   }
 })
 ```
