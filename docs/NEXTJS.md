@@ -165,15 +165,16 @@ export const TaskList = clientComponent({
     return ctx.api.tasks.list().match({
       isLoading: () => <Loading />,
       isError: (error) => <Error message={error.message} />,
-      isSuccess: (data) => data.isEmpty()
-        ? <EmptyState message="No tasks yet" />
-        : (
+      isSuccess: (data) => data.match({
+        empty: () => <EmptyState message="No tasks yet" />,
+        nonempty: () => (
           <ul>
             {data.map(task => (
               <li key={task.id}>{task.title}</li>
             ))}
           </ul>
         ),
+      }),
     })
   }
 })
