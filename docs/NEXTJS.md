@@ -118,19 +118,22 @@ The API methods automatically handle cache registration and invalidation.
 ### Basic Usage
 
 ```tsx
-// app/page.tsx (Server Component)
-import { clientComponent } from "@deessejs/server/next"
+// app/page.tsx
+import { page } from "@deessejs/server/next"
 import { TaskList } from "./TaskList"
 import { CreateTask } from "./CreateTask"
 
-export default function Page() {
-  return (
-    <>
-      <CreateTask />
-      <TaskList />
-    </>
-  )
-}
+export const Page = page({
+  props: z.object({}),
+  component: () => {
+    return (
+      <>
+        <CreateTask />
+        <TaskList />
+      </>
+    )
+  }
+})
 ```
 
 ```tsx
