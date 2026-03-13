@@ -28,6 +28,8 @@
 
 ```typescript
 import { defineContext } from "@deessejs/server"
+import { authPlugin } from "./plugins/auth"
+import { cachePlugin } from "./plugins/cache"
 
 const { t, createAPI } = defineContext({
   initialValues: {
