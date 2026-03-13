@@ -148,24 +148,22 @@ export const Page = page({
 
 import { clientComponent } from "@deessejs/server/next"
 
-export function TaskList() {
-  return clientComponent({
-    props: z.object({}),
-    component: (ctx) => {
-      const { data, isLoading } = ctx.api.tasks.list()
+export const TaskList = clientComponent({
+  props: z.object({}),
+  component: (ctx) => {
+    const { data, isLoading } = ctx.api.tasks.list()
 
-      if (isLoading) return <Loading />
+    if (isLoading) return <Loading />
 
-      return (
-        <ul>
-          {data?.map(task => (
-            <li key={task.id}>{task.title}</li>
-          ))}
-        </ul>
-      )
-    }
-  })
-}
+    return (
+      <ul>
+        {data?.map(task => (
+          <li key={task.id}>{task.title}</li>
+        ))}
+      </ul>
+    )
+  }
+})
 ```
 
 ```tsx
