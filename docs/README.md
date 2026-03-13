@@ -43,14 +43,16 @@ const { t, createAPI } = defineContext({
 ### Define Query
 
 ```typescript
+import { ok, err } from "@deessejs/core"
+
 const getUser = t.query({
   args: z.object({ id: z.number() }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     if (!user) {
-      return { ok: false as const, error: { code: "NOT_FOUND", message: "User not found" } }
+      return err({ code: "NOT_FOUND", message: "User not found" })
     }
-    return { ok: true as const, value: user, keys: [["users", { id: args.id }]] }
+    return ok(user, { keys: [["users", { id: args.id }]] })
   }
 })
 ```

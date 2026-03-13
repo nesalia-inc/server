@@ -67,9 +67,15 @@ This package is part of a multi-package architecture:
 ### Result Pattern
 
 ```typescript
+import { ok, err, Result } from "@deessejs/core"
+
 type Result<Success, Error = { code: string; message: string }> =
   | { ok: true; value: Success }
   | { ok: false; error: Error }
+
+// Helper functions
+ok(value, options?)  // returns { ok: true, value }
+err(error)           // returns { ok: false, error }
 ```
 
 ### Context Definition
@@ -133,6 +139,8 @@ const api = createAPI({
 ### Define Query
 
 ```typescript
+import { ok, err } from "@deessejs/core"
+
 const getUser = t.query({
   args: z.object({
     id: z.number()
@@ -141,10 +149,10 @@ const getUser = t.query({
     const user = await ctx.db.users.find(args.id)
 
     if (!user) {
-      return { ok: false as const, error: { code: "NOT_FOUND", message: "User not found" } }
+      return err({ code: "NOT_FOUND", message: "User not found" })
     }
 
-    return { ok: true as const, value: user }
+    return ok(user)
   }
 })
 ```
@@ -152,6 +160,8 @@ const getUser = t.query({
 ### Define Mutation
 
 ```typescript
+import { ok, err } from "@deessejs/core"
+
 const createUser = t.mutation({
   args: z.object({
     name: z.string().min(2),
@@ -160,11 +170,11 @@ const createUser = t.mutation({
   handler: async (ctx, args) => {
     const existing = await ctx.db.users.findByEmail(args.email)
     if (existing) {
-      return { ok: false as const, error: { code: "DUPLICATE", message: "Email already exists" } }
+      return err({ code: "DUPLICATE", message: "Email already exists" })
     }
 
     const user = await ctx.db.users.create(args)
-    return { ok: true as const, value: user }
+    return ok(user)
   }
 })
 ```
