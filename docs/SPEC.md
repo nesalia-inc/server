@@ -73,9 +73,14 @@ type Result<Success, Error = { code: string; message: string }> =
   | { ok: true; value: Success }
   | { ok: false; error: Error }
 
+// With cache keys for queries
+type WithCacheKeys<T, Keys extends CacheKey[]> = T & { keys: Keys }
+
+type CacheKey = string | Record<string, unknown>
+
 // Helper functions
-ok(value, options?)  // returns { ok: true, value }
-err(error)           // returns { ok: false, error }
+ok(value, options?)  // returns { ok: true, value, keys? }
+err(error)          // returns { ok: false, error }
 ```
 
 ### Context Definition
@@ -139,20 +144,20 @@ const api = createAPI({
 ### Define Query
 
 ```typescript
-import { ok, err } from "@deessejs/core"
+import { ok, err, Result } from "@deessejs/core"
 
 const getUser = t.query({
   args: z.object({
     id: z.number()
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Result<WithCacheKeys<User, ["users", { id: number }]>, NotFound> => {
     const user = await ctx.db.users.find(args.id)
 
     if (!user) {
       return err({ code: "NOT_FOUND", message: "User not found" })
     }
 
-    return ok(user)
+    return ok(user, { keys: [["users", { id: args.id }]] })
   }
 })
 ```
@@ -160,21 +165,21 @@ const getUser = t.query({
 ### Define Mutation
 
 ```typescript
-import { ok, err } from "@deessejs/core"
+import { ok, err, Result } from "@deessejs/core"
 
 const createUser = t.mutation({
   args: z.object({
     name: z.string().min(2),
     email: z.string().email(),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Result<User, DuplicateEmail> => {
     const existing = await ctx.db.users.findByEmail(args.email)
     if (existing) {
       return err({ code: "DUPLICATE", message: "Email already exists" })
     }
 
     const user = await ctx.db.users.create(args)
-    return ok(user)
+    return ok(user, { invalidate: ["users:list", "users:count"] })
   }
 })
 ```
