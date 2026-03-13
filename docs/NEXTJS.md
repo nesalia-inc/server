@@ -114,6 +114,17 @@ type ApiContext = {
 }
 ```
 
+The API methods return a result with `.match()` for rendering:
+
+```typescript
+ctx.api.tasks.list().match({
+  isLoading: () => <Loading />,
+  isStale: (data) => <StaleData data={data} />,
+  isSuccess: (data) => <Data data={data} />,
+  isError: (error) => <Error message={error.message} />,
+})
+```
+
 The API methods automatically handle cache registration and invalidation.
 
 ## Usage Examples
@@ -151,17 +162,17 @@ import { clientComponent } from "@deessejs/server/next"
 export const TaskList = clientComponent({
   props: z.object({}),
   component: (ctx) => {
-    const { data, isLoading } = ctx.api.tasks.list()
-
-    if (isLoading) return <Loading />
-
-    return (
-      <ul>
-        {data?.map(task => (
-          <li key={task.id}>{task.title}</li>
-        ))}
-      </ul>
-    )
+    return ctx.api.tasks.list().match({
+      isLoading: () => <Loading />,
+      isError: (error) => <Error message={error.message} />,
+      isSuccess: (data) => (
+        <ul>
+          {data.map(task => (
+            <li key={task.id}>{task.title}</li>
+          ))}
+        </ul>
+      ),
+    })
   }
 })
 ```
@@ -256,15 +267,17 @@ const TaskList = clientComponent({
   props: z.object({}),
   fallback: <Skeleton />,
   component: (ctx) => {
-    const { data, refetch, isStale } = ctx.api.tasks.list()
-
-    return (
-      <div>
-        {isStale && <Badge>Refetching...</Badge>}
-        <TaskItems tasks={data} />
-        <button onClick={() => refetch()}>Refresh</button>
-      </div>
-    )
+    return ctx.api.tasks.list().match({
+      isLoading: () => <Skeleton />,
+      isStale: (data) => (
+        <div>
+          <Badge>Refetching...</Badge>
+          <TaskItems tasks={data} />
+        </div>
+      ),
+      isSuccess: (data) => <TaskItems tasks={data} />,
+      isError: (error) => <Error message={error.message} />,
+    })
   }
 })
 ```
@@ -276,13 +289,11 @@ const TaskList = clientComponent({
   props: z.object({}),
   fallback: <ErrorBoundary><TaskList /></ErrorBoundary>,
   component: (ctx) => {
-    const { data, error } = ctx.api.tasks.list()
-
-    if (error) {
-      return <div>Error: {error.message}</div>
-    }
-
-    return <TaskItems tasks={data} />
+    return ctx.api.tasks.list().match({
+      isLoading: () => <Loading />,
+      isError: (error) => <div>Error: {error.message}</div>,
+      isSuccess: (data) => <TaskItems tasks={data} />,
+    })
   }
 })
 ```
