@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "deessejs-core": {
+      "source": "nesalia-inc/core",
+      "sourceType": "github",
+      "computedHash": "90bd11029506fc23903957a476d4098bb2df3d34b88049919a58bed26c7d0560"
+    }
+  }
+}
