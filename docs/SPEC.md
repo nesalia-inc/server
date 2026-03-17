@@ -199,8 +199,8 @@ Internal queries are only callable from server-side code, not exposed via HTTP:
 
 ```typescript
 const getAdminStats = t.internalQuery({
-  args: z.object({}),
-  handler: async (ctx, args): Result<AdminStats> => {
+  // No args needed - omit entirely
+  handler: async (ctx): Result<AdminStats> => {
     // Only accessible from server - safe from HTTP attacks
     const totalUsers = await ctx.db.users.count()
     const revenue = await ctx.db.orders.sum()

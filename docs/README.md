@@ -120,8 +120,8 @@ Internal operations are only callable from server-side code, not exposed via HTT
 ```typescript
 // Internal query - only callable from server code
 const getAdminStats = t.internalQuery({
-  args: z.object({}),
-  handler: async (ctx, args) => {
+  // No args needed - omit entirely
+  handler: async (ctx) => {
     // Only runs on server - safe from HTTP attacks
     return ok({
       totalUsers: await ctx.db.users.count(),

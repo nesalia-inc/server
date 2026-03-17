@@ -55,8 +55,8 @@ args: z.object({
   offset: z.number().default(0),
 })
 
-// Empty args
-args: z.object({})
+// No args - can be omitted entirely
+// args is optional
 ```
 
 ### Handler
@@ -144,9 +144,8 @@ Internal queries are not exposed via HTTP. They can only be called from server-s
 ```typescript
 // Internal query - not exposed via HTTP
 const getAdminStats = t.internalQuery({
-  args: z.object({}),
-
-  handler: async (ctx, args) => {
+  // No args needed - omit entirely
+  handler: async (ctx) => {
     // This runs only on server - safe from HTTP attacks
     return ok({
       totalUsers: await ctx.db.users.count(),
@@ -384,9 +383,8 @@ const getUserWithPosts = t.query({
 
 ```typescript
 const getConfig = t.query({
-  args: z.object({}),
-
-  handler: async (ctx, args) => {
+  // No args needed - omit entirely
+  handler: async (ctx) => {
     // Check cache first
     const cached = await ctx.cache.get("app:config")
     if (cached) {
