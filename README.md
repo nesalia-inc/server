@@ -124,24 +124,6 @@ const clientApi = createPublicAPI(api)
 // Client: clientApi.users.delete() - TypeScript Error!
 ```
 
-## Documentation
-
-- [QUERIES.md](docs/QUERIES.md) - Complete guide to queries
-- [MUTATIONS.md](docs/MUTATIONS.md) - Complete guide to mutations
-- [CACHE.md](docs/CACHE.md) - Cache system with keys and invalidation
-- [PLUGINS.md](docs/PLUGINS.md) - Plugin system details
-- [NEXTJS.md](docs/NEXTJS.md) - Next.js integration
-
-## Current Status
-
-- **Query system** - Implemented
-- **Mutation system** - Implemented
-- **Internal operations** - Implemented
-- **Cache system** - Implemented
-- **Plugin system** - Implemented
-- **Event system** - Implemented
-- **Route handler** - In progress
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
