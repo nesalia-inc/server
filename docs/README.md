@@ -346,6 +346,8 @@ function CreateUserForm() {
 ## Documentation
 
 - [SPEC.md](SPEC.md) - Full API specification
+- [QUERIES.md](QUERIES.md) - Complete guide to queries
+- [MUTATIONS.md](MUTATIONS.md) - Complete guide to mutations
 - [PLUGINS.md](PLUGINS.md) - Plugin system details
 - [EXTENSIONS.md](EXTENSIONS.md) - Extension system (auth, cache, logging, jobs)
 - [EVENTS.md](EVENTS.md) - Event system details
