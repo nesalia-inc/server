@@ -2,12 +2,21 @@
 
 ## Overview
 
-`@deessejs/server/next` provides a higher-level integration for Next.js that enables automatic cache revalidation across components. When one component mutates data, other components that query that data are automatically refetched.
+`@deessejs/server/next` provides a higher-level integration for Next.js that enables:
+1. Automatic cache revalidation across components
+2. HTTP exposure of public queries and mutations via route handler
+
+## Security Note
+
+Next.js Server Actions are exposed via HTTP and can be called by anyone. Use this package's architecture to protect sensitive operations:
+
+- Use `query()` / `mutation()` for public operations (exposed via HTTP)
+- Use `internalQuery()` / `internalMutation()` for private operations (server-only)
 
 ## Imports
 
 ```typescript
-import { page, layout, serverComponent, clientComponent } from "@deessejs/server/next"
+import { page, layout, serverComponent, clientComponent, createRouteHandler } from "@deessejs/server/next"
 ```
 
 ## Core Concept
@@ -302,6 +311,53 @@ const TaskList = clientComponent({
 ```
 
 ## Setup
+
+### Create Route Handler
+
+Expose your public API via HTTP:
+
+```typescript
+// app/(deesse)/api/[...slug]/route.ts
+import { createRouteHandler } from "@deessejs/server/next"
+import { api } from "@/server/api"
+
+export const POST = createRouteHandler(api)
+```
+
+This route handler:
+- Only exposes `query` and `mutation` operations
+- Does NOT expose `internalQuery` and `internalMutation`
+- Provides type-safe HTTP endpoints
+
+### Call from Client
+
+```typescript
+// Call public operations from client
+const response = await fetch("/api/users.get", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ args: { id: 123 } }),
+})
+
+const result = await response.json()
+```
+
+### Call from Server
+
+```typescript
+// Call from server components or server actions
+import { api } from "@/server/api"
+
+export default async function Page() {
+  // Public operations
+  const users = await api.users.list({})
+
+  // Internal operations (not exposed via HTTP)
+  const stats = await api.users.getAdminStats({})
+
+  return <Dashboard users={users} stats={stats} />
+}
+```
 
 No Provider needed. The API is automatically available in all components.
 

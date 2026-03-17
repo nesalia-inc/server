@@ -16,35 +16,40 @@ This package is part of a multi-package architecture:
 ### Core Features
 
 1. **Query and Mutation Constructors**
-   - `query()` - Define read operations that return `AsyncOutcome<T, Cause<CauseData>, Unit>`
-   - `mutation()` - Define write operations that return `AsyncOutcome<T, Cause<CauseData>, Unit>`
+   - `query()` - Define public read operations, exposed via HTTP
+   - `mutation()` - Define public write operations, exposed via HTTP
 
-2. **Context Management**
+2. **Internal Operations**
+   - `internalQuery()` - Define private read operations, server-side only
+   - `internalMutation()` - Define private write operations, server-side only
+
+3. **Context Management**
    - `defineContext<T>()` - Define typed context with runtime initialization
    - `createAPI()` - Create API instance with router and plugins
 
-3. **Router System**
+4. **Router System**
    - Hierarchical routing: `api.users.get()`, `api.posts.create()`
    - Nested routers for organization
 
-4. **Lifecycle Hooks**
+5. **Lifecycle Hooks**
    - `beforeInvoke` - Run before query/mutation execution
    - `onSuccess` - Run after successful execution
    - `onError` - Run after failed execution
 
-5. **Aliases**
+6. **Aliases**
    - Multiple names for the same function
    - Example: `getUser`, `fetchUser`, `retrieveUser` all point to the same query
 
-6. **Cache Invalidation Stream**
+7. **Cache Invalidation Stream**
    - `createCacheStream()` - Create a stream for cache management
    - `invalidate()` - Mark queries as stale
 
-7. **Local Executor**
-   - `createLocalExecutor()` - Execute queries/mutations in-process
-   - No network overhead for server actions
+8. **Route Handler**
+   - `createRouteHandler()` - Create Next.js route handler for HTTP exposure
+   - Only exposes `query` and `mutation` operations
+   - `internalQuery` and `internalMutation` remain private
 
-8. **Plugin System**
+9. **Plugin System**
    - Plugins extend context with additional properties
    - Additional plugin features (queries, mutations, events) coming later
 
@@ -184,6 +189,22 @@ const getUserSimple = t.query({
 })
 ```
 
+### Define Internal Query
+
+Internal queries are only callable from server-side code, not exposed via HTTP:
+
+```typescript
+const getAdminStats = t.internalQuery({
+  args: z.object({}),
+  handler: async (ctx, args): Result<AdminStats> => {
+    // Only accessible from server - safe from HTTP attacks
+    const totalUsers = await ctx.db.users.count()
+    const revenue = await ctx.db.orders.sum()
+    return ok({ totalUsers, revenue })
+  }
+})
+```
+
 ### Define Mutation
 
 ```typescript
@@ -237,6 +258,70 @@ async function createUserAction(data: { name: string; email: string }) {
 
   throw new Error(result.error.message)
 }
+```
+
+### Using Internal Operations
+
+Internal operations can only be called from server-side code:
+
+```typescript
+// app/admin/page.tsx (Server Component)
+import { api } from "@/server/api"
+
+export default async function AdminPage() {
+  // Internal operations work from server code
+  const stats = await api.users.getAdminStats({})
+  const user = await api.users.get({ id: 1 })
+
+  return <Dashboard stats={stats} user={user} />
+}
+
+// app/actions/admin.ts (Server Action)
+"use server"
+
+import { api } from "@/server/api"
+
+async function deleteUserAction(id: number) {
+  // Internal mutation - only callable from server
+  const result = await api.users.delete({ id })
+
+  if (!result.ok) {
+    throw new Error(result.error.message)
+  }
+
+  return result.value
+}
+```
+
+### Expose via Next.js Route Handler
+
+Create a route handler to expose only public operations via HTTP:
+
+```typescript
+// app/(deesse)/api/[...slug]/route.ts
+import { createRouteHandler } from "@deessejs/server/next"
+import { api } from "@/server/api"
+
+export const POST = createRouteHandler(api)
+```
+
+This creates HTTP endpoints for all public `query` and `mutation` operations. Internal operations are NOT exposed.
+
+**Request format:**
+
+```bash
+POST /api/users.get
+Content-Type: application/json
+
+{ "args": { "id": 123 } }
+```
+
+**Response format:**
+
+```json
+{ "ok": true, "value": { ... } }
+// or
+{ "ok": false, "error": { "code": "NOT_FOUND", "message": "..." } }
 ```
 
 ### Lifecycle Hooks
@@ -379,7 +464,11 @@ import { createLocalExecutor } from "@deessejs/server"
 
 const executor = createLocalExecutor(api)
 
+// Execute public operations
 const result = await executor.execute("users.get", { id: 1 })
+
+// Internal operations can also be executed locally
+const stats = await executor.execute("users.getAdminStats", {})
 ```
 
 ## Architecture
@@ -399,9 +488,37 @@ const result = await executor.execute("users.get", { id: 1 })
 This is the heart of the `@deessejs` ecosystem:
 
 - Define queries and mutations once
-- Use locally (server actions) or expose via HTTP (@deessejs/api)
+- Use locally (server actions) or expose via HTTP (route handler)
+- **Security**: Separate public vs internal operations
 - Plugin system for extensibility (queries, mutations, context)
 - Built on @deessejs/core patterns (AsyncOutcome<T, Cause, ExceptionData>)
+
+## Security Model
+
+The key insight is that **Server Actions in Next.js are not secure** - they are exposed via HTTP and can be called by anyone. This package provides a solution:
+
+| Operation Type | Callable via HTTP | Callable from Server |
+|---------------|-------------------|---------------------|
+| `query()` | ✅ Yes | ✅ Yes |
+| `mutation()` | ✅ Yes | ✅ Yes |
+| `internalQuery()` | ❌ No | ✅ Yes |
+| `internalMutation()` | ❌ No | ✅ Yes |
+
+This ensures sensitive operations remain protected:
+
+```typescript
+// Public - can be called from client via HTTP
+const getPublicData = t.query({ ... })
+
+// Public - can be called from client via HTTP
+const createPost = t.mutation({ ... })
+
+// Internal - only server code can call this
+const deleteUser = t.internalMutation({ ... })
+
+// Internal - only server code can call this
+const getAdminStats = t.internalQuery({ ... })
+```
 
 ## Future Considerations
 

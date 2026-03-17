@@ -1,10 +1,52 @@
 # @deessejs/server Documentation
 
-`@deessejs/server` is the core API package for the `@deessejs` multi-package architecture. It provides a unified way to define queries and mutations with local execution capabilities.
+`@deessejs/server` is the core API package for the `@deessejs` multi-package architecture. It provides a unified way to define queries and mutations with secure execution capabilities.
+
+## Security Note
+
+**Server Actions in Next.js are not secure** - they are exposed via HTTP and can be called by anyone. This package solves this by separating:
+
+- **`query` / `mutation`** - Public operations, exposed via HTTP through a Next.js route handler
+- **`internalQuery` / `internalMutation`** - Internal operations, only callable from server-side code
+
+This ensures that sensitive operations (admin actions, privileged mutations) remain secure.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Your Next.js App                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ┌─────────────────────┐         ┌─────────────────────┐      │
+│   │   Server Code       │         │   HTTP Exposure     │      │
+│   │   (components,       │         │   (route handler)   │      │
+│   │    server actions)  │         │                     │      │
+│   │                     │         │   POST /api/users   │      │
+│   │   api.users.get()   │────────►│   POST /api/tasks   │      │
+│   │   api.tasks.list()  │         │                     │      │
+│   │                     │         │   Only PUBLIC      │      │
+│   │   Can call PUBLIC   │         │   routes exposed   │      │
+│   │   AND INTERNAL      │         │                     │      │
+│   └─────────────────────┘         └─────────────────────┘      │
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │              @deessejs/server                           │   │
+│   │                                                         │   │
+│   │   query() ──────────────► Exposed via HTTP             │   │
+│   │   mutation() ──────────► Exposed via HTTP             │   │
+│   │                                                         │   │
+│   │   internalQuery() ──────► Only callable from server   │   │
+│   │   internalMutation() ────► Only callable from server   │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ## Features
 
 - **Queries & Mutations** - Define typed API operations with `t.query()` and `t.mutation()`
+- **Internal Operations** - Secure server-only operations with `t.internalQuery()` and `t.internalMutation()`
 - **Context Management** - Define typed context with `defineContext()`
 - **Router System** - Hierarchical routing for organized APIs
 - **Lifecycle Hooks** - `beforeInvoke`, `onSuccess`, `onError`
@@ -12,7 +54,7 @@
 - **Cache Invalidation** - Built-in cache management
 - **Plugin System** - Extend context with plugins
 - **Event System** - `ctx.send()` for emitting events, `t.on()` for listening
-- **Local Executor** - In-process execution for server actions
+- **HTTP Exposure** - Expose public routes via Next.js route handler
 
 ## Packages
 
@@ -71,6 +113,34 @@ const createUser = t.mutation({
 })
 ```
 
+### Define Internal Operations
+
+Internal operations are only callable from server-side code, not exposed via HTTP:
+
+```typescript
+// Internal query - only callable from server code
+const getAdminStats = t.internalQuery({
+  args: z.object({}),
+  handler: async (ctx, args) => {
+    // Only runs on server - safe from HTTP attacks
+    return ok({
+      totalUsers: await ctx.db.users.count(),
+      revenue: await ctx.db.orders.sum(),
+    })
+  }
+})
+
+// Internal mutation - only callable from server code
+const deleteUser = t.internalMutation({
+  args: z.object({ id: z.number() }),
+  handler: async (ctx, args) => {
+    // Only server code can delete users
+    await ctx.db.users.delete(args.id)
+    return ok({ success: true })
+  }
+})
+```
+
 ### Create API
 
 ```typescript
@@ -79,6 +149,10 @@ const api = createAPI({
     users: t.router({
       get: getUser,
       create: createUser,
+      // Internal operations are part of the router
+      // but not exposed via HTTP
+      getAdminStats: getAdminStats,
+      delete: deleteUser,
     }),
   }),
 })
@@ -97,6 +171,41 @@ async function getUserAction(id: number) {
   if (result.error.name === "NOT_FOUND") return null
   throw new Error(result.error.message)
 }
+```
+
+## Expose via Next.js Route Handler
+
+Create a route handler to expose only public operations via HTTP:
+
+```typescript
+// app/(deesse)/api/[...slug]/route.ts
+import { createRouteHandler } from "@deessejs/server/next"
+import { api } from "@/server/api"
+
+export const POST = createRouteHandler(api)
+```
+
+This creates an HTTP endpoint that only exposes `query` and `mutation` operations. Internal operations (`internalQuery`, `internalMutation`) remain private and can only be called from server-side code.
+
+### Usage from Client
+
+```typescript
+// Call via HTTP from client
+const response = await fetch("/api/users.get", {
+  method: "POST",
+  body: JSON.stringify({ args: { id: 123 } }),
+})
+const result = await response.json()
+```
+
+### Usage from Server
+
+```typescript
+// Call from server components, server actions, or internal functions
+const result = await api.users.get({ id: 123 })
+
+// Can also call internal operations from server
+const stats = await api.users.getAdminStats({}) // Works - internal
 ```
 
 ## Event System
