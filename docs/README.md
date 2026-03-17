@@ -223,12 +223,32 @@ Create a route handler to expose only public operations via HTTP:
 ```typescript
 // app/(deesse)/api/[...slug]/route.ts
 import { createRouteHandler } from "@deessejs/server/next"
-import { api } from "@/server/api"
+import { api, clientApi } from "@/server/api"
 
-export const POST = createRouteHandler(api)
+export const POST = createRouteHandler(clientApi)
 ```
 
 This creates an HTTP endpoint that only exposes `query` and `mutation` operations. Internal operations (`internalQuery`, `internalMutation`) remain private and can only be called from server-side code.
+
+### With better-auth
+
+You can combine multiple route handlers in the same route group:
+
+```typescript
+// app/(deesse)/api/[...slug]/route.ts - @deessejs/server
+import { createRouteHandler } from "@deessejs/server/next"
+import { clientApi } from "@/server/api"
+
+export const POST = createRouteHandler(clientApi)
+```
+
+```typescript
+// app/(deesse)/api/[...route]/route.ts - better-auth
+import { auth } from "@/lib/auth"
+import { toNextJsHandler } from "better-auth/next-js"
+
+export const { POST, GET } = toNextJsHandler(auth)
+```
 
 ### Usage from Client
 

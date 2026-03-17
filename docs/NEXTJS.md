@@ -319,15 +319,35 @@ Expose your public API via HTTP:
 ```typescript
 // app/(deesse)/api/[...slug]/route.ts
 import { createRouteHandler } from "@deessejs/server/next"
-import { api } from "@/server/api"
+import { clientApi } from "@/server/api"
 
-export const POST = createRouteHandler(api)
+export const POST = createRouteHandler(clientApi)
 ```
 
 This route handler:
 - Only exposes `query` and `mutation` operations
 - Does NOT expose `internalQuery` and `internalMutation`
 - Provides type-safe HTTP endpoints
+
+### With better-auth
+
+You can combine multiple route handlers in the same route group:
+
+```typescript
+// app/(deesse)/api/[...slug]/route.ts - @deessejs/server
+import { createRouteHandler } from "@deessejs/server/next"
+import { clientApi } from "@/server/api"
+
+export const POST = createRouteHandler(clientApi)
+```
+
+```typescript
+// app/(deesse)/api/[...route]/route.ts - better-auth
+import { auth } from "@/lib/auth"
+import { toNextJsHandler } from "better-auth/next-js"
+
+export const { POST, GET } = toNextJsHandler(auth)
+```
 
 ### Call from Client
 
