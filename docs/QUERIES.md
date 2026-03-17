@@ -183,30 +183,6 @@ const getUser = t.query({
   })
 ```
 
-### Aliases
-
-You can add multiple names to the same query:
-
-```typescript
-import { aliases } from "@deessejs/server"
-
-const getUser = t.query({
-  args: z.object({ id: z.number() }),
-  handler: async (ctx, args) => {
-    return await ctx.db.users.find(args.id)
-  }
-})
-
-// Add aliases
-aliases(getUser, ["fetchUser", "retrieveUser", "getUserById"])
-
-// All these work:
-api.users.get({ id: 1 })
-api.users.fetchUser({ id: 1 })
-api.users.retrieveUser({ id: 1 })
-api.users.getUserById({ id: 1 })
-```
-
 ## Using Queries
 
 ### From Server Components

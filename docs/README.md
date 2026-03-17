@@ -50,7 +50,6 @@ This ensures that sensitive operations (admin actions, privileged mutations) rem
 - **Context Management** - Define typed context with `defineContext()`
 - **Router System** - Hierarchical routing for organized APIs
 - **Lifecycle Hooks** - `beforeInvoke`, `onSuccess`, `onError`
-- **Aliases** - Multiple names for the same function
 - **Cache Invalidation** - Built-in cache management
 - **Plugin System** - Extend context with plugins
 - **Event System** - `ctx.send()` for emitting events, `t.on()` for listening

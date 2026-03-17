@@ -36,11 +36,7 @@ This package is part of a multi-package architecture:
    - `onSuccess` - Run after successful execution
    - `onError` - Run after failed execution
 
-6. **Aliases**
-   - Multiple names for the same function
-   - Example: `getUser`, `fetchUser`, `retrieveUser` all point to the same query
-
-7. **Cache Invalidation Stream**
+6. **Cache Invalidation Stream**
    - `createCacheStream()` - Create a stream for cache management
    - `invalidate()` - Mark queries as stale
 
@@ -431,20 +427,6 @@ const createUser = t.mutation({
     return success(user)
   }
 })
-```
-
-### Aliases
-
-```typescript
-import { aliases } from "@deessejs/server"
-
-const getUser = t.query({ ... })
-
-aliases(getUser, ["fetchUser", "retrieveUser", "getUserById"])
-
-api.users.get({ id: 1 })
-api.users.fetchUser({ id: 1 })
-api.users.retrieveUser({ id: 1 })
 ```
 
 ### Plugin System
