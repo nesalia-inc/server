@@ -1,0 +1,38 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: package/server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: pnpm install
+
+      - name: Run tests with coverage
+        run: pnpm vitest run --coverage
+
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct')
+          echo "Coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+            echo "Coverage $COVERAGE% is below 90% threshold"
+            exit 1
+          fi
