@@ -523,6 +523,246 @@ const updateUser = t.mutation({
 })
 ```
 
+## Next.js Integration
+
+The cache system integrates seamlessly with Next.js Data Cache via tags.
+
+### Automatic Tag Revalidation
+
+Cache keys are automatically mapped to Next.js revalidation tags:
+
+```typescript
+const keys = defineCacheKeys({
+  users: {
+    _root: "users",
+    list: () => ["users", "list"],
+    byId: (id: number) => ["users", { id }],
+  }
+})
+
+// In a mutation
+const updateUser = t.mutation({
+  handler: async (ctx, args) => {
+    await ctx.db.users.update(args)
+    return ok(user, {
+      invalidate: [keys.users.list()]  // Also calls revalidateTag("users.list")
+    })
+  }
+})
+```
+
+### How It Works
+
+```typescript
+// Internal implementation
+async function invalidate(keys: CacheKey[]) {
+  for (const key of keys) {
+    const tag = serializeKey(key)  // ["users", "list"] → "users.list"
+
+    // 1. Invalidate internal cache
+    await internalCache.invalidate(tag)
+
+    // 2. Revalidate Next.js Data Cache
+    if (isNextJs) {
+      revalidateTag(tag)
+    }
+  }
+}
+```
+
+This ensures:
+- **Server cache** is cleared
+- **Next.js Data Cache** is revalidated
+- **UI updates** automatically via client SDK
+
+## Stable Serialization
+
+Cache keys must serialize deterministically regardless of object property order.
+
+### The Problem
+
+```typescript
+// These should produce the same cache key
+["users", { id: 1, name: "John" }]
+["users", { name: "John", id: 1 }]
+```
+
+### Solution: Stable Stringify
+
+The framework includes a stable serialization utility:
+
+```typescript
+import { serializeCacheKey } from "@deessejs/server"
+
+// Deterministic output
+serializeCacheKey(["users", { id: 1 }])           // "users:1"
+serializeCacheKey(["users", { name: "John", id: 1 }]) // "users:id=1:name=John"
+
+// Alphabetical sorting ensures consistency
+// Object keys are sorted: id, then name
+```
+
+### Key Serialization Rules
+
+| Input | Output |
+|-------|--------|
+| `"string"` | `"string"` |
+| `["a", "b"]` | `"a:b"` |
+| `["a", { id: 1 }]` | `"a:id=1"` |
+| `["a", { id: 1, name: "b" }]` | `"a:id=1:name=b"` |
+
+## Prefix vs Exact Invalidation
+
+### Exact Match (Default)
+
+Only the exact key is invalidated:
+
+```
+Invalidate: ["users", "list"]
+Affected:   ["users", "list"]
+Not Affected: ["users", "list", { page: 1 }]
+```
+
+### Prefix Match
+
+Use prefix to invalidate all related keys:
+
+```typescript
+const updateUser = t.mutation({
+  handler: async (ctx, args) => {
+    return ok(user, {
+      invalidate: [
+        keys.users.byId(args.id),      // Exact: ["users", { id: 1 }]
+        { prefix: keys.users._root }   // Prefix: all "users" keys
+      ]
+    })
+  }
+})
+```
+
+### When to Use Each
+
+| Scenario | Use |
+|----------|-----|
+| Update single user | Exact match |
+| Create/delete user | Prefix match (invalidate all lists) |
+| Pagination | Exact match per page |
+| Search results | Exact match per query |
+
+## Client-Side Sync (SDK Integration)
+
+The React SDK automatically syncs server invalidation to client cache.
+
+### Flow
+
+```typescript
+// 1. Server mutation returns invalidation
+const result = await api.users.update({ id: 1, name: "New" })
+// Result: { ok: true, value: user, invalidate: [["users", { id: 1 }], ["users", "list"]] }
+
+// 2. SDK intercepts and updates React Query
+useUsers() // Automatically refetches
+```
+
+### Automatic Invalidation
+
+```typescript
+// The SDK does this automatically:
+import { QueryClient } from "@tanstack/react-query"
+
+const queryClient = new QueryClient()
+
+// Intercept API responses
+api.addHook("response", (result) => {
+  if (result.invalidate) {
+    for (const key of result.invalidate) {
+      queryClient.invalidateQueries({ queryKey: key })
+    }
+  }
+})
+```
+
+### Result: Zero-Config Invalidation
+
+```typescript
+// Developer writes this:
+const updateUser = useMutation({
+  mutationFn: (data) => api.users.update(data),
+})
+
+// UI automatically updates everywhere
+// No useEffect, no invalidateQueries, no manual refetch!
+```
+
+## Auto-Cache Middleware
+
+For simple queries, generate cache keys automatically.
+
+### Usage
+
+```typescript
+const getUser = t.query({
+  args: z.object({ id: z.number() }),
+  autoCache: true,  // Generates key: ["getUser", { id: 1 }]
+  handler: async (ctx, args) => {
+    return ok(await ctx.db.users.find(args.id))
+  }
+})
+```
+
+### Key Generation
+
+```typescript
+// autoCache: true generates
+["getUser", { id: 1 }]
+
+// Equivalent to manually:
+keys: [keys.getUser(args.id)]
+```
+
+### When to Use
+
+| Use Auto-Cache | Use Manual Keys |
+|----------------|-----------------|
+| Simple CRUD operations | Complex relationships |
+| Single record lookups | Multiple cache entries |
+| Default TTL | Custom TTL per query |
+
+## TTL and HTTP Headers
+
+TTL propagates to HTTP response headers for edge caching.
+
+### Cache-Control Header
+
+```typescript
+const getConfig = t.query({
+  handler: async (ctx) => {
+    return ok(config, {
+      keys: ["config"],
+      ttl: 60000  // 1 minute
+    })
+  }
+})
+
+// Response headers:
+{
+  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30"
+}
+```
+
+### Header Values
+
+| TTL | s-maxage | stale-while-revalidate |
+|-----|----------|----------------------|
+| 0 | 0 | 0 |
+| 60000 | 60 | 30 |
+| 3600000 | 3600 | 1800 |
+
+This enables:
+- **CDN caching** (Cloudflare, Vercel Edge)
+- **Browser caching**
+- **ISR** (Incremental Static Regeneration)
+
 ## Best Practices
 
 1. **Use consistent key patterns** - Define a convention and stick to it
