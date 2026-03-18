@@ -15,6 +15,70 @@ Middleware is a function that wraps a handler execution. It receives the context
 1. **Operation Middleware** - Applied to specific queries or mutations
 2. **Global Middleware** - Applied to all operations in the API
 
+### Lifecycle Hooks
+
+Lifecycle hooks are methods on queries and mutations that allow running code at specific points during execution:
+
+| Hook | When it runs | Arguments |
+|------|--------------|-----------|
+| `beforeInvoke` | Before the handler executes | `(ctx, args)` |
+| `afterInvoke` | After the handler executes (always) | `(ctx, args, result)` |
+| `onSuccess` | After successful handler execution | `(ctx, args, result)` |
+| `onError` | After handler throws or returns error | `(ctx, args, error)` |
+
+These hooks can be chained on any query or mutation:
+
+```typescript
+const getUser = t.query({
+  args: z.object({ id: z.number() }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.users.find(args.id)
+    if (!user) {
+      return err({ code: "NOT_FOUND", message: "User not found" })
+    }
+    return ok(user)
+  }
+})
+  .beforeInvoke((ctx, args) => {
+    console.log("Fetching user", args.id)
+  })
+  .afterInvoke((ctx, args, result) => {
+    console.log("Query completed", { id: args.id, ok: result.ok })
+  })
+  .onSuccess((ctx, args, user) => {
+    console.log("User fetched successfully:", user.id)
+    // Can emit events
+    ctx.send("user.viewed", { userId: user.id })
+  })
+  .onError((ctx, args, error) => {
+    console.error("Failed to fetch user:", args.id, error)
+  })
+```
+
+**Execution order:**
+
+```
+beforeInvoke → [handler] → onSuccess/onError → afterInvoke
+```
+
+### Lifecycle Hooks API
+
+```typescript
+type Query<Ctx, Args, Output> = {
+  beforeInvoke(handler: (ctx: Ctx, args: Args) => void | Promise<void>): Query<Ctx, Args, Output>
+  afterInvoke(handler: (ctx: Ctx, args: Args, result: Result<Output>) => void | Promise<void>): Query<Ctx, Args, Output>
+  onSuccess(handler: (ctx: Ctx, args: Args, data: Output) => void | Promise<void>): Query<Ctx, Args, Output>
+  onError(handler: (ctx: Ctx, args: Args, error: unknown) => void | Promise<void>): Query<Ctx, Args, Output>
+}
+
+type Mutation<Ctx, Args, Output> = {
+  beforeInvoke(handler: (ctx: Ctx, args: Args) => void | Promise<void>): Mutation<Ctx, Args, Output>
+  afterInvoke(handler: (ctx: Ctx, args: Args, result: Result<Output>) => void | Promise<void>): Mutation<Ctx, Args, Output>
+  onSuccess(handler: (ctx: Ctx, args: Args, data: Output) => void | Promise<void>): Mutation<Ctx, Args, Output>
+  onError(handler: (ctx: Ctx, args: Args, error: unknown) => void | Promise<void>): Mutation<Ctx, Args, Output>
+}
+```
+
 ## API Reference
 
 ### Creating Middleware: `t.middleware()`
@@ -414,6 +478,153 @@ const cacheMiddleware = t.middleware({
     return result
   }
 })
+```
+
+### Using Lifecycle Hooks
+
+Lifecycle hooks provide a cleaner way to handle cross-cutting concerns compared to middleware:
+
+```typescript
+// Logging with lifecycle hooks
+const getUser = t.query({
+  args: z.object({ id: z.number() }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.users.find(args.id)
+    if (!user) {
+      return err({ code: "NOT_FOUND", message: "User not found" })
+    }
+    return ok(user)
+  }
+})
+  .beforeInvoke((ctx, args) => {
+    console.log("Start fetching user:", args.id)
+  })
+  .onSuccess((ctx, args, user) => {
+    console.log("User fetched:", user.id)
+  })
+  .onError((ctx, args, error) => {
+    console.error("Failed to fetch user:", args.id, error)
+  })
+```
+
+#### Audit Logging
+
+```typescript
+const createUser = t.mutation({
+  args: z.object({
+    name: z.string(),
+    email: z.string().email(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.users.create(args)
+    return ok(user)
+  }
+})
+  .onSuccess((ctx, args, user) => {
+    // Log successful creation
+    ctx.send("audit.log", {
+      action: "USER_CREATED",
+      userId: user.id,
+      createdBy: ctx.userId,
+      timestamp: new Date().toISOString(),
+    })
+  })
+  .onError((ctx, args, error) => {
+    // Log failed creation
+    ctx.send("audit.log", {
+      action: "USER_CREATE_FAILED",
+      email: args.email,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+    })
+  })
+```
+
+#### Metrics Collection
+
+```typescript
+const getUser = t.query({
+  args: z.object({ id: z.number() }),
+  handler: async (ctx, args) => { ... }
+})
+  .beforeInvoke((ctx, args) => {
+    ctx.startTime = Date.now()
+  })
+  .onSuccess((ctx, args, data) => {
+    const duration = Date.now() - ctx.startTime
+    ctx.metrics.record(`query.getUser.success`, { duration })
+  })
+  .onError((ctx, args, error) => {
+    const duration = Date.now() - ctx.startTime
+    ctx.metrics.record(`query.getUser.error`, { duration })
+  })
+  .afterInvoke((ctx, args, result) => {
+    // Always runs - for cleanup or final metrics
+    ctx.metrics.increment(`query.getUser.total`)
+  })
+```
+
+#### Cache Invalidation
+
+```typescript
+const updateUser = t.mutation({
+  args: z.object({
+    id: z.number(),
+    name: z.string(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.users.update(args.id, { name: args.name })
+    return ok(user)
+  }
+})
+  .onSuccess((ctx, args, user) => {
+    // Invalidate related cache entries
+    ctx.cache.invalidate(`user:${args.id}`)
+    ctx.cache.invalidate("users:list")
+  })
+```
+
+#### Validation with afterInvoke
+
+```typescript
+const createUser = t.mutation({
+  args: z.object({
+    name: z.string().min(2),
+    email: z.string().email(),
+  }),
+  handler: async (ctx, args) => {
+    const user = await ctx.db.users.create(args)
+    return ok(user)
+  }
+})
+  .afterInvoke((ctx, args, result) => {
+    // Transform response
+    if (result.ok) {
+      result.value.createdAt = new Date(result.value.createdAt).toISOString()
+    }
+  })
+```
+
+### Combining Middleware and Lifecycle Hooks
+
+Middleware and lifecycle hooks can be used together. Middleware runs first, then lifecycle hooks:
+
+```typescript
+const authMiddleware = t.middleware({
+  name: "auth",
+  handler: async (ctx, next) => {
+    ctx.userId = Number(ctx.headers.get("x-user-id"))
+    return next()
+  }
+})
+
+const getUser = t.query({
+  args: z.object({ id: z.number() }),
+  middleware: authMiddleware,  // Runs first
+  handler: async (ctx, args) => { ... }  // Then handler
+})
+  .beforeInvoke((ctx, args) => { ... })  // Then beforeInvoke
+  .onSuccess((ctx, args, data) => { ... })  // Then onSuccess
 ```
 
 ## Type Safety

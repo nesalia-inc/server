@@ -61,6 +61,12 @@ This package is part of a multi-package architecture:
     - Middleware chains for multiple middleware per operation
     - Context enhancement and request modification
 
+11. **Lifecycle Hooks**
+    - `beforeInvoke` - Run before handler execution
+    - `afterInvoke` - Run after handler execution (always)
+    - `onSuccess` - Run after successful handler execution
+    - `onError` - Run after handler throws or returns error
+
 ## Dependencies
 
 - **@deessejs/core** - Required peer dependency
