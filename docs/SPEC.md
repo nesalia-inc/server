@@ -318,9 +318,9 @@ Create a route handler to expose only public operations via HTTP:
 ```typescript
 // app/(deesse)/api/[...slug]/route.ts
 import { createRouteHandler } from "@deessejs/server/next"
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
-export const POST = createRouteHandler(clientApi)
+export const POST = createRouteHandler(client)
 ```
 
 ### With better-auth
@@ -330,9 +330,9 @@ You can combine multiple route handlers:
 ```typescript
 // app/(deesse)/api/[...slug]/route.ts - @deessejs/server
 import { createRouteHandler } from "@deessejs/server/next"
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
-export const POST = createRouteHandler(clientApi)
+export const POST = createRouteHandler(client)
 ```
 
 ```typescript
@@ -363,9 +363,9 @@ const api = createAPI({
 })
 
 // Client-safe API (only public operations)
-const clientApi = createPublicAPI(api)
+const client = createPublicAPI(api)
 
-export { api, clientApi }
+export { api, client }
 ```
 
 **Server code** uses `api` (full access):
@@ -377,18 +377,18 @@ const stats = await api.users.getAdminStats({})  // ✅ Works
 await api.users.delete({ id: 1 })                  // ✅ Works
 ```
 
-**Client code** uses `clientApi` (public only):
+**Client code** uses `client` (public only):
 ```typescript
 // app/components/UserList.tsx
 "use client"
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
-const users = await clientApi.users.get({})       // ✅ Works
-await clientApi.users.create({ name: "John" })    // ✅ Works
+const users = await client.users.get({})       // ✅ Works
+await client.users.create({ name: "John" })    // ✅ Works
 
-// TypeScript error - not available on clientApi!
-const stats = await clientApi.users.getAdminStats({})  // ❌ TS Error
-await clientApi.users.delete({ id: 1 })                // ❌ TS Error
+// TypeScript error - not available on client!
+const stats = await client.users.getAdminStats({})  // ❌ TS Error
+await client.users.delete({ id: 1 })                // ❌ TS Error
 ```
 
 This creates HTTP endpoints for all public `query` and `mutation` operations. Internal operations are NOT exposed.

@@ -171,9 +171,9 @@ Create a separate API that only exposes public operations. This provides TypeScr
 import { createPublicAPI } from "@deessejs/server"
 
 // Creates a client-safe API with only query and mutation
-const clientApi = createPublicAPI(api)
+const client = createPublicAPI(api)
 
-export { api, clientApi }
+export { api, client }
 ```
 
 ### Usage: Server vs Client
@@ -193,16 +193,16 @@ export default async function UsersPage() {
 // ===== CLIENT CODE (Client Components) =====
 // app/components/UserList.tsx (Client Component)
 "use client"
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
 async function UserList() {
   // Can only call PUBLIC operations
-  const users = await clientApi.users.get({})       // ✅ Works
-  await clientApi.users.create({ name: "John" })    // ✅ Works
+  const users = await client.users.get({})       // ✅ Works
+  await client.users.create({ name: "John" })    // ✅ Works
 
   // TypeScript error - internal operations don't exist!
-  const stats = await clientApi.users.getAdminStats({})  // ❌ TS Error
-  await clientApi.users.delete({ id: 1 })               // ❌ TS Error
+  const stats = await client.users.getAdminStats({})  // ❌ TS Error
+  await client.users.delete({ id: 1 })               // ❌ TS Error
 }
 ```
 
@@ -226,9 +226,9 @@ Create a route handler to expose only public operations via HTTP:
 ```typescript
 // app/(deesse)/api/[...slug]/route.ts
 import { createRouteHandler } from "@deessejs/server/next"
-import { api, clientApi } from "@/server/api"
+import { api, client } from "@/server/api"
 
-export const POST = createRouteHandler(clientApi)
+export const POST = createRouteHandler(client)
 ```
 
 This creates an HTTP endpoint that only exposes `query` and `mutation` operations. Internal operations (`internalQuery`, `internalMutation`) remain private and can only be called from server-side code.
@@ -240,9 +240,9 @@ You can combine multiple route handlers in the same route group:
 ```typescript
 // app/(deesse)/api/[...slug]/route.ts - @deessejs/server
 import { createRouteHandler } from "@deessejs/server/next"
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
-export const POST = createRouteHandler(clientApi)
+export const POST = createRouteHandler(client)
 ```
 
 ```typescript

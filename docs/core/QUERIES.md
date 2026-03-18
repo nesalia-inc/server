@@ -230,13 +230,13 @@ export async function getUser(id: number) {
 // app/components/UserProfile.tsx
 "use client"
 
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
 export function UserProfile({ userId }: { userId: number }) {
   const [user, setUser] = useState(null)
 
   useEffect(() => {
-    clientApi.users.get({ id: userId }).then(result => {
+    client.users.get({ id: userId }).then(result => {
       if (result.ok) setUser(result.value)
     })
   }, [userId])

@@ -27,7 +27,7 @@ The client system enables React components to interact with the server API with 
 │              └───────────┬─────────────┘                    │
 │                          │                                  │
 │              ┌───────────▼───────────┐                      │
-│              │     clientApi        │                      │
+│              │     client        │                      │
 │              │  (createPublicAPI)   │                      │
 │              └───────────┬───────────┘                      │
 │                          │                                  │
@@ -93,9 +93,9 @@ const api = createAPI({
 })
 
 // Client-safe API - only public operations
-const clientApi = createPublicAPI(api)
+const client = createPublicAPI(api)
 
-export { api, clientApi }
+export { api, client }
 ```
 
 ### Server Components
@@ -117,16 +117,16 @@ export default async function AdminPage() {
 ```typescript
 // app/components/UserList.tsx (Client Component)
 "use client"
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
 async function UserList() {
   // Can only call PUBLIC operations
-  const users = await clientApi.users.get({})       // ✅ Works
-  await clientApi.users.create({ name: "John" })    // ✅ Works
+  const users = await client.users.get({})       // ✅ Works
+  await client.users.create({ name: "John" })    // ✅ Works
 
   // TypeScript error - internal operations don't exist!
-  const stats = await clientApi.users.getAdminStats({})  // ❌ TS Error
-  await clientApi.users.delete({ id: 1 })               // ❌ TS Error
+  const stats = await client.users.getAdminStats({})  // ❌ TS Error
+  await client.users.delete({ id: 1 })               // ❌ TS Error
 }
 ```
 
@@ -137,9 +137,9 @@ async function UserList() {
 ```typescript
 // app/api/[...slug]/route.ts
 import { createRouteHandler } from "@deessejs/server/next"
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
-export const POST = createRouteHandler(clientApi)
+export const POST = createRouteHandler(client)
 ```
 
 ### Client HTTP Calls
@@ -167,13 +167,13 @@ pnpm add @deessejs/server/react
 // app/providers.tsx
 "use client"
 import { QueryClientProvider } from "@deessejs/server/react"
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 
 const queryClient = new QueryClient()
 
 export function Providers({ children }) {
   return (
-    <QueryClientProvider client={queryClient} api={clientApi}>
+    <QueryClientProvider client={queryClient} api={client}>
       {children}
     </QueryClientProvider>
   )
@@ -385,14 +385,14 @@ export const TaskList = clientComponent({
 
 ## Best Practices
 
-### 1. Use clientApi for Client Components
+### 1. Use client for Client Components
 
 ```typescript
 // ❌ Wrong - uses full API
 import { api } from "@/server/api"
 
 // ✅ Correct - uses public API only
-import { clientApi } from "@/server/api"
+import { client } from "@/server/api"
 ```
 
 ### 2. Define Cache Keys in Queries

@@ -265,7 +265,7 @@ if (!validation.ok) {
 }
 
 // Only send if valid
-await clientApi.users.create(validation.value)
+await client.users.create(validation.value)
 ```
 
 This is where **Valibot shines** - at ~6KB, you can bundle it with your client code for instant validation feedback.
