@@ -344,31 +344,30 @@ function CreateUserForm() {
 
 ## Documentation
 
-### Getting Started
+### Overview
 - [SPEC.md](SPEC.md) - Full API specification
 
 ### Core
-- [core/QUERIES.md](core/QUERIES.md) - Complete guide to queries
-- [core/CACHE.md](core/CACHE.md) - Cache system with keys and invalidation
-- [core/MIDDLEWARE.md](core/MIDDLEWARE.md) - Middleware system details
+- [core/QUERIES.md](core/QUERIES.md) - Queries definition
+- [core/MIDDLEWARE.md](core/MIDDLEWARE.md) - Middleware system
+- [core/CACHE.md](core/CACHE.md) - Cache system
 
 ### Features
-- [features/EVENTS.md](features/EVENTS.md) - Event system details
-- [features/LIFECYCLE.md](features/LIFECYCLE.md) - Lifecycle hooks (beforeInvoke, afterInvoke, onSuccess, onError)
-- [features/PLUGINS.md](features/PLUGINS.md) - Plugin system details
-- [features/VALIDATION.md](features/VALIDATION.md) - Multi-engine validation (Zod, Valibot, ArkType)
+- [features/VALIDATION.md](features/VALIDATION.md) - Multi-engine validation
+- [features/PLUGINS.md](features/PLUGINS.md) - Plugin system
+- [features/EVENTS.md](features/EVENTS.md) - Event system
+- [features/LIFECYCLE.md](features/LIFECYCLE.md) - Lifecycle hooks
 
-### Integrations
-- [integration/NEXTJS.md](integration/NEXTJS.md) - Next.js cache revalidation
-- [integration/NEXTJS_INTEGRATION.md](integration/NEXTJS_INTEGRATION.md) - Complete Next.js integration guide
-- [integration/REACT_HOOKS.md](integration/REACT_HOOKS.md) - React hooks integration
+### Integration
+- [integration/NEXTJS.md](integration/NEXTJS.md) - Next.js integration
+- [integration/REACT_HOOKS.md](integration/REACT_HOOKS.md) - React hooks
 
 ### Advanced
-- [advanced/SERIALIZATION.md](advanced/SERIALIZATION.md) - Handling Dates, BigInt, Map, Set
-- [advanced/ERROR_HTTP_STATUS.md](advanced/ERROR_HTTP_STATUS.md) - Mapping errors to HTTP status codes
-- [advanced/ASYNC_CONTEXT.md](advanced/ASYNC_CONTEXT.md) - AsyncLocalStorage for context access
-- [advanced/METADATA.md](advanced/METADATA.md) - OpenAPI, documentation, SDK generation
-- [advanced/BATCHING.md](advanced/BATCHING.md) - Request batching for performance
+- [advanced/BATCHING.md](advanced/BATCHING.md) - Request batching
+- [advanced/ASYNC_CONTEXT.md](advanced/ASYNC_CONTEXT.md) - AsyncLocalStorage
+- [advanced/SERIALIZATION.md](advanced/SERIALIZATION.md) - Serialization
+- [advanced/METADATA.md](advanced/METADATA.md) - Metadata
+- [advanced/ERROR_HTTP_STATUS.md](advanced/ERROR_HTTP_STATUS.md) - Error HTTP status
 
 ## Installation
 
