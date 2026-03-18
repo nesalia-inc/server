@@ -15,9 +15,9 @@ This folder contains examples showing how developers would use `@deessejs/server
 
 ```tsx
 // Setup
-<MagicQueryClientProvider api={client}>
+<QueryClientProvider client={queryClient} api={client}>
   {children}
-</MagicQueryClientProvider>
+</QueryClientProvider>
 
 // Usage - that's it!
 const { data } = useQuery(client.users.list, { args: { limit: 10 } })

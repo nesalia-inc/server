@@ -105,9 +105,9 @@ Practical examples showing how end users would use the magic wrapper.
 
 ```typescript
 // Setup
-<MagicQueryClientProvider api={client}>
+<QueryClientProvider client={queryClient} api={client}>
   {children}
-</MagicQueryClientProvider>
+</QueryClientProvider>
 
 // Usage - that's it!
 const { data } = useQuery(client.users.list, { args: { limit: 10 } })

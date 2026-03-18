@@ -412,7 +412,7 @@ interface ProviderProps {
   queryClient?: QueryClient
 }
 
-export function MagicQueryClientProvider({
+export function QueryClientProvider({
   children,
   api,
   queryClient,
@@ -429,10 +429,10 @@ export function MagicQueryClientProvider({
   )
 }
 
-export function useMagicClient(): MagicQueryClient {
+export function useQueryClient(): MagicQueryClient {
   const client = useContext(MagicClientContext)
   if (!client) {
-    throw new Error('useMagicClient must be used within MagicQueryClientProvider')
+    throw new Error('useQueryClient must be used within QueryClientProvider')
   }
   return client
 }
@@ -442,10 +442,10 @@ export function useMagicClient(): MagicQueryClient {
 
 ```typescript
 // index.ts
-export { MagicQueryClientProvider, useMagicClient } from './provider'
+export { QueryClientProvider, useQueryClient } from './provider'
 export { createMagicClient } from './client'
-export { useMagicQuery } from './query'
-export { useMagicMutation } from './mutation'
+export { useQuery } from './query'
+export { useMutation } from './mutation'
 
 // Types
 export type { QueryDefinition, MutationDefinition, CacheKey } from './types'
@@ -458,14 +458,14 @@ export type { QueryDefinition, MutationDefinition, CacheKey } from './types'
 ```typescript
 // app/providers.tsx
 "use client"
-import { MagicQueryClientProvider } from "@deessejs/server/react/magic"
+import { QueryClientProvider } from "@deessejs/server/react"
 import { client } from "./api"
 
 export function Providers({ children }) {
   return (
-    <MagicQueryClientProvider api={client}>
+    <QueryClientProvider client={queryClient} api={client}>
       {children}
-    </MagicQueryClientProvider>
+    </QueryClientProvider>
   )
 }
 ```

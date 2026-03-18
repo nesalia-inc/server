@@ -383,13 +383,13 @@ const { queryClient, queries, mutations } = createMagicQueryClient({
 
 export function Providers({ children }) {
   return (
-    <MagicQueryClientProvider
-      queryClient={queryClient}
+    <QueryClientProvider
+      client={queryClient}
       queries={queries}
       mutations={mutations}
     >
       {children}
-    </MagicQueryClientProvider>
+    </QueryClientProvider>
   )
 }
 ```

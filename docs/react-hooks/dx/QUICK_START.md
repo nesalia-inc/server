@@ -61,14 +61,14 @@ export const client = createPublicAPI(api)
 ```tsx
 // app/providers.tsx
 "use client"
-import { MagicQueryClientProvider } from "@deessejs/server/react"
+import { QueryClientProvider } from "@deessejs/server/react"
 import { client } from "./server/api"
 
 export function Providers({ children }) {
   return (
-    <MagicQueryClientProvider api={client}>
+    <QueryClientProvider client={queryClient} api={client}>
       {children}
-    </MagicQueryClientProvider>
+    </QueryClientProvider>
   )
 }
 ```
