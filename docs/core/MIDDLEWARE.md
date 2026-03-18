@@ -22,7 +22,7 @@ Middleware is a function that wraps a handler execution. It receives the context
 ```typescript
 type Middleware<Ctx, Args = unknown> = {
   name: string
-  args?: ZodSchema<Args>
+  args?: StandardSchema<Args>  // Uses Standard Schema (Zod, Valibot, ArkType)
   handler: (ctx: Ctx & { args: Args }, next: () => Result) => Result
 }
 
@@ -36,8 +36,10 @@ type QueryBuilder<Ctx> = {
 | Property | Type | Description |
 |----------|------|-------------|
 | `name` | `string` | Unique identifier for the middleware |
-| `args` | `ZodSchema` | Optional Zod schema for validating middleware-specific args |
+| `args` | `StandardSchema` | Optional Standard Schema for validating middleware-specific args |
 | `handler` | `(ctx, next) => Result` | Middleware function that calls `next()` to proceed |
+
+> **Note:** Uses **Standard Schema** for consistency with the validation system. Works with Zod, Valibot, ArkType, or any Standard Schema compatible library.
 
 ### Middleware Context
 
@@ -45,8 +47,12 @@ Middleware receives an extended context with access to:
 
 - `ctx` - The full context object
 - `ctx.args` - The operation arguments (modifiable)
-- `ctx.headers` - Request headers
+- `ctx.headers` - Request headers (Next.js `headers()` abstraction)
 - `ctx.operation` - The operation being executed
+- `ctx.meta` - Temporary storage for passing data between middleware
+- `ctx.isHttpRequest` - Whether this is an HTTP request (for security)
+
+> **Note:** `ctx.headers` is abstracted from Next.js `headers()`, making it testable without a full Next.js server.
 
 ## Usage Examples
 
@@ -301,7 +307,56 @@ export const validateRequestMiddleware = t.middleware({
 })
 ```
 
-### Composing Middleware
+### Server-Side Only Middleware
+
+For `internalQuery` and `internalMutation`, add an extra security layer:
+
+```typescript
+const serverOnlyMiddleware = t.middleware({
+  name: "serverOnly",
+  handler: async (ctx, next) => {
+    // Verify this is a server-side call, not HTTP
+    if (ctx.isHttpRequest) {
+      return err({
+        code: "FORBIDDEN",
+        message: "This operation is only available server-side"
+      })
+    }
+
+    return next()
+  }
+})
+
+// Apply to internal operations
+const deleteAllUsers = t.internalMutation({
+  middleware: serverOnlyMiddleware,
+  handler: async (ctx, args) => { ... }
+})
+```
+
+### Serverless Performance
+
+In Serverless environments (Vercel, Cloudflare), middleware latency directly affects response time.
+
+```typescript
+// ❌ Avoid: Multiple async DB calls in middleware
+const slowMiddleware = t.middleware({
+  name: "slow",
+  handler: async (ctx, next) => {
+    await ctx.db.config.get("setting1")  // DB call
+    await ctx.db.config.get("setting2")  // Another DB call
+    return next()
+  }
+})
+
+// ✅ Better: Use Plugins to inject resources, not middleware
+// Middleware should only be for CONTROL logic (auth, rate limit)
+// Heavy operations belong in Plugins or the handler itself
+```
+
+> **Best Practice:** Use **Plugins** for resource injection (DB, Config) and **Middleware** only for control logic (Auth, Rate Limit, Caching).
+
+## Composing Middleware
 
 Build reusable middleware combinations:
 
@@ -485,6 +540,38 @@ const getUser = t.query<Ctx>({
   }
 })
 ```
+
+## Middleware vs Lifecycle Hooks
+
+It's crucial to understand when to use each:
+
+| Aspect | Middleware | Lifecycle Hooks (`.on`) |
+|--------|-----------|------------------------|
+| **Control Flow** | **Active** - Decides IF and HOW the handler runs | **Passive** - Observes and reacts |
+| **Short-circuit** | Yes - Can return early | No - Cannot stop execution |
+| **Modify Args** | Yes | No |
+| **Modify Result** | Yes | Yes (only `afterInvoke`) |
+| **Use Case** | Auth, Rate Limit, Caching | Logging, Metrics, Analytics |
+
+### When to Use Middleware
+
+- **Authentication/Authorization** - Block requests
+- **Rate Limiting** - Control request frequency
+- **Caching** - Return cached data without calling handler
+- **Feature Flags** - Enable/disable features
+- **Request Modification** - Transform args before handler
+
+### When to Use Hooks
+
+- **Logging** - Record what happened
+- **Metrics** - Track usage
+- **Audit Trails** - Record actions
+- **Response Transformation** - Modify output
+- **Notifications** - Send events (via `ctx.send`)
+
+### Key Principle
+
+> **Middleware decides, Hooks observe.** If you need to control whether the handler runs, use Middleware. If you just need to react to what happened, use Hooks.
 
 ## Error Handling
 
