@@ -6,16 +6,49 @@ This folder contains analysis and proposed implementations for `@deessejs/server
 
 [`TANSTACK_QUERY_ANALYSIS.md`](TANSTACK_QUERY_ANALYSIS.md) provides a comprehensive overview of TanStack Query features and what is currently implemented or missing in `@deessejs/server/react`.
 
-## Current Features
+## Magic Wrapper Architecture
 
-- Basic `useQuery` and `useMutation`
-- Server-driven cache invalidation
-- Cache key management via `keys` / `invalidate`
-- Manual cache manipulation via `useQueryClient`
-- Basic SSR hydration
-- Dependent queries (`enabled` option)
+The goal is to create a **transparent wrapper** on top of TanStack Query where the server automatically manages everything - no boilerplate needed.
 
-## Proposed Features
+### Core Documents
+
+| Document | Description |
+|----------|-------------|
+| [`MAGIC_WRAPPER.md`](MAGIC_WRAPPER.md) | High-level concept of the magic wrapper |
+| [`MAGIC_ARCHITECTURE.md`](MAGIC_ARCHITECTURE.md) | Complete implementation code |
+| [`DEEP_TANSTACK_INTEGRATION.md`](DEEP_TANSTACK_INTEGRATION.md) | Deep dive into TanStack Query internals |
+| [`AUTO_INVALIDATION.md`](AUTO_INVALIDATION.md) | Server-driven cache invalidation |
+| [`CACHE_KEYS_EXTRACTION.md`](CACHE_KEYS_EXTRACTION.md) | Automatic key extraction from server |
+
+## Current vs Magic
+
+### Without Magic (Current Implementation)
+
+```typescript
+// Client must manually handle everything
+const { data } = useQuery({
+  queryKey: ['users', 'list', limit],
+  queryFn: () => client.users.list({ limit }),
+})
+
+const { mutate } = useMutation({
+  mutationFn: (data) => client.users.create(data),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['users', 'list'] })
+  },
+})
+```
+
+### With Magic
+
+```typescript
+// Just use the API - everything automatic!
+const { data } = useQuery(client.users.list, { args: { limit: 10 } })
+
+const { mutate } = useMutation(client.users.create)
+```
+
+## Proposed Features (from TanStack Query)
 
 ### High Priority
 
@@ -35,7 +68,7 @@ This folder contains analysis and proposed implementations for `@deessejs/server
 | Mutation State | [`MUTATION_STATE.md`](MUTATION_STATE.md) | Track multiple mutations |
 | Retry Logic | [`RETRY_LOGIC.md`](RETRY_LOGIC.md) | Automatic retry with backoff |
 
-## Architecture Difference
+## Architecture Comparison
 
 ### TanStack Query (Client-Driven)
 
@@ -53,20 +86,20 @@ Server Query → Returns Keys → Client Cache → Auto-invalidate
     Server decides what to invalidate
 ```
 
-The server-driven approach simplifies the API but limits some advanced use cases.
+The server-driven approach simplifies the API but limits some advanced use cases. The magic wrapper bridges this gap by automating everything while using TanStack Query under the hood.
 
 ## Usage
 
 ```typescript
-import { useQuery, useMutation } from "@deessejs/server/react"
+import { useMagicQuery, useMagicMutation } from "@deessejs/server/react/magic"
 
 // Query with auto-cache
-const { data } = useQuery(api.users.list, {
+const { data } = useMagicQuery(client.users.list, {
   args: { limit: 10 },
 })
 
 // Mutation with auto-invalidation
-const { mutate } = useMutation(api.users.create)
+const { mutate } = useMagicMutation(client.users.create)
 await mutate({ name: "John" })
 // Automatically refetches related queries
 ```
