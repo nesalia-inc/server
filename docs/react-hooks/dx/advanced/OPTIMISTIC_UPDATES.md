@@ -1,8 +1,18 @@
 # Optimistic Updates
 
-Update UI immediately before server responds, rollback on error.
+Update UI immediately before server responds, with automatic rollback on error. Zero boilerplate.
 
-## Server
+## Philosophy
+
+DeesseJS removes the boilerplate. You define **what** changes, not **how** to manage the cache.
+
+---
+
+## Option 1: Server Instructions (Recommended)
+
+The server declares what changes, DeesseJS SDK applies automatically.
+
+### Server
 
 ```typescript
 // server/api.ts
@@ -13,81 +23,124 @@ const toggleLike = t.mutation({
       where: { postId_userId: { postId: args.postId, userId: ctx.userId }}
     })
 
-    if (existing) {
+    const isLiked = !!existing
+
+    if (isLiked) {
       await ctx.db.likes.delete({ where: { id: existing.id } })
-      return ok({ liked: false }, {
-        invalidate: [["posts", { id: args.postId }]]
-      })
+    } else {
+      await ctx.db.likes.create({ data: { postId: args.postId, userId: ctx.userId } })
     }
 
-    await ctx.db.likes.create({
-      data: { postId: args.postId, userId: ctx.userId }
-    })
-    return ok({ liked: true }, {
-      invalidate: [["posts", { id: args.postId }]]
+    // Server declares the optimistic changes
+    return ok({ liked: !isLiked }, {
+      invalidate: [["posts", { id: args.postId }]],
+      optimistic: [
+        { key: keys.posts.byId(args.postId), path: "liked", value: !isLiked },
+        { key: keys.posts.byId(args.postId), path: "likesCount", delta: isLiked ? -1 : 1 }
+      ]
     })
   }
 })
 ```
 
-## Client
+### Client
 
 ```tsx
-// LikeButton.tsx
+// LikeButton.tsx - ZERO BOILERPLATE
 "use client"
-import { useMutation, useQueryClient } from "@deessejs/server/react"
-import { client } from "@/server/api"
+import { useMutation, useQuery } from "@deessejs/server/react"
+import { client, keys } from "@/server/api"
 
-export function LikeButton({ postId, initialLiked }: { postId: number, initialLiked: boolean }) {
-  const queryClient = useQueryClient()
+export function LikeButton({ postId }: { postId: number }) {
+  const { data: post } = useQuery(client.posts.get, { args: { id: postId } })
+  const { mutate } = useMutation(client.posts.toggleLike)
 
-  const { mutate } = useMutation(client.posts.toggleLike, {
-    // Manual optimistic update
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["posts"] })
-
-      // Snapshot previous data
-      const previous = queryClient.getQueryData(["posts", { id: postId }])
-
-      // Optimistically update
-      queryClient.setQueryData(["posts", { id: postId }], (old: any) => ({
-        ...old,
-        liked: !old.liked,
-        likesCount: old.liked ? old.likesCount - 1 : old.likesCount + 1
-      }))
-
-      return { previous }
-    },
-    onError: (err, vars, context) => {
-      // Rollback on error
-      queryClient.setQueryData(
-        ["posts", { id: postId }],
-        context.previous
-      )
-    }
-  })
+  // Display the cached value - SDK handles optimistic updates automatically
+  if (!post) return null
 
   return (
     <button onClick={() => mutate({ postId })}>
-      {initialLiked ? "Unlike" : "Like"}
+      {post.liked ? "❤️" : "🤍"} {post.likesCount}
     </button>
   )
 }
 ```
 
-## Flow
+That's it. The SDK reads `optimistic` from the response and applies changes before the promise resolves.
 
-| Step | Description |
-|------|-------------|
-| 1 | User clicks like button |
-| 2 | `onMutate` fires - UI updates immediately |
-| 3 | Server mutation runs |
-| 4 | On success: query refetches to sync |
-| 5 | On error: `onError` fires - UI rolls back |
+---
+
+## Option 2: useOptimisticMutation (React 19)
+
+For cases needing explicit control, use the combined hook with React 19's useOptimistic.
+
+### Client
+
+```tsx
+// LikeButton.tsx
+"use client"
+import { useOptimisticMutation, useQuery } from "@deessejs/server/react"
+import { client } from "@/server/api"
+
+export function LikeButton({ postId }: { postId: number }) {
+  const { data: post } = useQuery(client.posts.get, { args: { id: postId } })
+
+  const [optimisticPost, toggleLike] = useOptimisticMutation(
+    client.posts.toggleLike,
+    post,
+    (state, vars) => ({
+      ...state,
+      liked: !state.liked,
+      likesCount: state.liked ? state.likesCount - 1 : state.likesCount + 1
+    })
+  )
+
+  if (!post) return null
+
+  return (
+    <button onClick={() => toggleLike({ postId })}>
+      {optimisticPost.liked ? "❤️" : "🤍"} {optimisticPost.likesCount}
+    </button>
+  )
+}
+```
+
+### How it works
+
+```typescript
+// Simplified implementation of useOptimisticMutation
+function useOptimisticMutation(apiFn, initialState, updateFn) {
+  const [optimisticState, setOptimistic] = useOptimistic(initialState, updateFn)
+  const mutation = useMutation(apiFn)
+
+  const mutate = (vars) => {
+    startTransition(async () => {
+      setOptimistic(vars)              // 1. Instant UI update (React 19)
+      await mutation.mutateAsync(vars) // 2. Server call + auto-invalidation
+    })
+  }
+
+  return [optimisticState, mutate, mutation]
+}
+```
+
+---
+
+## Comparison
+
+| Aspect | Old Way (TanStack) | DeesseJS |
+|--------|-------------------|----------|
+| Lines of code | ~25 | 3-8 |
+| Boilerplate | cancelQueries, setQueryData, rollback | None |
+| Type safety | Manual | Automatic inference |
+| Rollback | Manual in onError | Automatic (React 19) |
+| Server control | Client decides | Server declares |
+
+---
 
 ## When to Use
 
-- Like/Unlike buttons
-- Toggle actions
-- Quick form submissions
-- Any action where instant feedback improves UX
+- **Option 1 (Server Instructions)**: Most cases - server drives the logic
+- **Option 2 (useOptimisticMutation)**: Complex UI transformations, animations, or when you need more control
+
+Both approaches eliminate the need to touch `queryClient` directly.
