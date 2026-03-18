@@ -88,6 +88,32 @@ const { mutate } = useMutation(client.users.create)
 | Mutation State | [`features/MUTATION_STATE.md`](features/MUTATION_STATE.md) | Track multiple mutations |
 | Retry Logic | [`features/RETRY_LOGIC.md`](features/RETRY_LOGIC.md) | Automatic retry with backoff |
 
+## Developer Experience (DX)
+
+Practical examples showing how end users would use the magic wrapper.
+
+### Documents
+
+| Document | Description |
+|----------|-------------|
+| [`dx/QUICK_START.md`](dx/QUICK_START.md) | Get started in 5 minutes |
+| [`dx/CRUD_EXAMPLES.md`](dx/CRUD_EXAMPLES.md) | Complete CRUD examples |
+| [`dx/ADVANCED_PATTERNS.md`](dx/ADVANCED_PATTERNS.md) | Complex use cases |
+| [`dx/COMPARISON.md`](dx/COMPARISON.md) | Without vs With Magic |
+
+### Quick Example
+
+```typescript
+// Setup
+<MagicQueryClientProvider api={client}>
+  {children}
+</MagicQueryClientProvider>
+
+// Usage - that's it!
+const { data } = useQuery(client.users.list, { args: { limit: 10 } })
+const { mutate } = useMutation(client.users.create)
+```
+
 ## Architecture Comparison
 
 ### TanStack Query (Client-Driven)
