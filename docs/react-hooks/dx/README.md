@@ -8,8 +8,22 @@ This folder contains examples showing how developers would use `@deessejs/server
 |------|-------------|
 | [`QUICK_START.md`](QUICK_START.md) | Get started in 5 minutes |
 | [`CRUD_EXAMPLES.md`](CRUD_EXAMPLES.md) | Complete CRUD examples |
-| [`ADVANCED_PATTERNS.md`](ADVANCED_PATTERNS.md) | Complex use cases |
 | [`COMPARISON.md`](COMPARISON.md) | Without vs With Magic |
+
+## Advanced Patterns
+
+Real-world patterns for complex applications.
+
+See [`advanced/`](advanced/) folder:
+
+| File | Description |
+|------|-------------|
+| [`advanced/DEPENDENT_QUERIES.md`](advanced/DEPENDENT_QUERIES.md) | Run queries based on other query results |
+| [`advanced/PAGINATION.md`](advanced/PAGINATION.md) | Handle paginated data |
+| [`advanced/OPTIMISTIC_UPDATES.md`](advanced/OPTIMISTIC_UPDATES.md) | Instant UI updates with rollback |
+| [`advanced/PREFETCHING.md`](advanced/PREFETCHING.md) | Load data before needed |
+| [`advanced/ERROR_HANDLING.md`](advanced/ERROR_HANDLING.md) | Handle typed errors from server |
+| [`advanced/LOADING_STATES.md`](advanced/LOADING_STATES.md) | Different loading states |
 
 ## Quick Example
 
