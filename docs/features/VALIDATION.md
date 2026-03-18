@@ -143,6 +143,8 @@ const getUser = t.query({
 
 ### With Typia
 
+> **Note:** Typia requires a compilation plugin (`ts-patch` or `unplugin-typia`). Unlike Zod/Valibot, it's not "just a library" - it's a code transformer that generates validation code at compile time.
+
 ```typescript
 import { typia } from "typia"
 
@@ -152,6 +154,85 @@ const getUser = t.query({
     const user = await ctx.db.users.find(args.id)
     return ok(user)
   }
+})
+```
+
+### Setup for Typia
+
+Typia requires additional setup in your `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [{ "transform": "typia/lib/transform" }]
+  }
+}
+```
+
+Or use with unplugin:
+
+```typescript
+// vite.config.ts
+import typia from "unplugin-typia/vite"
+
+export default defineConfig({
+  plugins: [typia()]
+})
+```
+
+## Type Inference
+
+Types are automatically inferred from schemas - no manual configuration needed:
+
+```typescript
+import { InferArgs, InferOutput } from "@deessejs/server"
+import { z } from "zod"
+
+const createUser = t.mutation({
+  args: z.object({
+    name: z.string(),
+    email: z.string().email()
+  }),
+  handler: async (ctx, args) => {
+    // args is automatically typed!
+    // { name: string; email: string }
+    return ok(args)
+  }
+})
+
+// Extract types for reuse
+type CreateUserArgs = InferArgs<typeof createUser>
+type CreateUserOutput = InferOutput<typeof createUser>
+// CreateUserArgs = { name: string; email: string }
+```
+
+The framework uses Standard Schema's type utilities internally:
+
+```typescript
+import type { StandardSchemaV1 } from "@standard-schema/spec"
+
+export type InferArgs<T> = StandardSchemaV1.InferInput<T>
+export type InferOutput<T> = StandardSchemaV1.InferOutput<T>
+```
+
+## Partial Validation
+
+Since `@deessejs` is validator-agnostic, schema manipulation (like `.partial()` or `.omit()`) should be done using your validator's native API:
+
+```typescript
+// Zod - use .partial()
+const updateUserSchema = userSchema.partial()
+
+// Valibot - use v.partial()
+const updateUserSchema = v.partial(userSchema)
+
+// ArkType - use partial()
+const updateUserSchema = type(userSchema).partial()
+
+// Then use in mutation
+const updateUser = t.mutation({
+  args: updateUserSchema,
+  handler: async (ctx, args) => { ... }
 })
 ```
 
@@ -215,6 +296,43 @@ Different libraries have different error formats:
   }
 }
 ```
+
+### Internal Implementation
+
+The framework handles normalization automatically:
+
+```typescript
+// What happens inside @deessejs/server
+const validate = async (schema, data) => {
+  const standardSchema = schema["~standard"]
+  if (!standardSchema) {
+    throw new Error("Invalid schema: does not implement Standard Schema")
+  }
+
+  const result = await standardSchema.validate(data)
+
+  if (result.issues) {
+    // Normalization happens here
+    return {
+      ok: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Validation failed",
+        details: result.issues.map(issue => ({
+          path: issue.path?.map(p =>
+            typeof p === "object" ? p.key : p
+          ).join(".") || "root",
+          message: issue.message
+        }))
+      }
+    }
+  }
+
+  return { ok: true, value: result.value }
+}
+```
+
+You don't need to handle this - it's done automatically by the framework.
 
 ## Performance Comparison
 
