@@ -360,6 +360,7 @@ function CreateUserForm() {
 - [core/CACHE.md](core/CACHE.md) - Cache system
 
 ### Features
+- [features/CLIENT.md](features/CLIENT.md) - Client system (useQuery, useMutation, cache sync)
 - [features/VALIDATION.md](features/VALIDATION.md) - Multi-engine validation
 - [features/PLUGINS.md](features/PLUGINS.md) - Plugin system
 - [features/EVENTS.md](features/EVENTS.md) - Event system
