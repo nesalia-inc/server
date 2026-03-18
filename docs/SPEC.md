@@ -55,6 +55,12 @@ This package is part of a multi-package architecture:
    - Plugins extend context with additional properties
    - Additional plugin features (queries, mutations, events) coming later
 
+10. **Middleware System**
+    - `t.middleware()` - Create middleware for intercepting requests
+    - Apply to specific queries/mutations or globally via `createAPI()`
+    - Middleware chains for multiple middleware per operation
+    - Context enhancement and request modification
+
 ## Dependencies
 
 - **@deessejs/core** - Required peer dependency

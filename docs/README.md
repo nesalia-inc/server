@@ -351,6 +351,7 @@ function CreateUserForm() {
 - [PLUGINS.md](PLUGINS.md) - Plugin system details
 - [EXTENSIONS.md](EXTENSIONS.md) - Extension system (auth, cache, logging, jobs)
 - [EVENTS.md](EVENTS.md) - Event system details
+- [MIDDLEWARE.md](MIDDLEWARE.md) - Middleware system details
 - [REACT_HOOKS.md](REACT_HOOKS.md) - React hooks integration
 - [NEXTJS.md](NEXTJS.md) - Next.js integration with automatic cache revalidation
 
