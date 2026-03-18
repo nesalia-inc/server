@@ -663,6 +663,99 @@ t.on("order.completed", async (ctx, args, event) => {
 })
 ```
 
+## Advanced Features
+
+### Wildcard Support (Joker)
+
+Listen to all events in a domain using wildcards:
+
+```typescript
+// Listen to all user events
+t.on("user.*", (ctx, args, event) => {
+  // Catches: user.created, user.updated, user.deleted, etc.
+  console.log(`User event: ${event.name}`, event.data)
+})
+
+// Listen to all events
+t.on("*", (ctx, args, event) => {
+  // Catches all events in the system
+  ctx.logger.info("Event emitted", { name: event.name })
+})
+```
+
+### Internal Events
+
+Some events should never be exposed to clients (e.g., for WebSocket broadcasting later):
+
+```typescript
+const events = defineEvents({
+  user: {
+    created: {
+      data: { userId: number; email: string },
+      internal: true  // Not accessible from client
+    },
+    updated: {
+      data: { userId: number; changes: Record<string, unknown> }
+    }
+  }
+})
+
+// Internal events can only be emitted from server code
+// Client cannot trigger internal events via API
+```
+
+### Standard Schema Validation for Events
+
+Use Standard Schema to validate event payloads at runtime (especially useful in development):
+
+```typescript
+import { v } from "valibot"
+
+const events = defineEvents({
+  user: {
+    created: {
+      // Validates payload at runtime in development
+      schema: v.object({
+        userId: v.number(),
+        email: v.pipe(v.string(), v.email())
+      }),
+      data: {} as { userId: number; email: string } // TypeScript type
+    }
+  }
+})
+
+// In development: ctx.send validates against schema
+// In production: validation can be disabled for performance
+```
+
+This catches bugs early when a developer forgets a property in the payload.
+
+## Registry Internals
+
+### How `defineEvents` Works
+
+The registry transforms nested objects into string event names:
+
+```typescript
+// Define
+const events = defineEvents({
+  user: {
+    created: { data: { userId: number } }
+  }
+})
+
+// Usage in code (object reference)
+ctx.send(events.user.created, { userId: 1 })
+
+// Internally transformed to
+ctx.send("user.created", { userId: 1 })
+```
+
+Benefits:
+- **Autocomplete:** IDE suggests `events.user.` → `created`
+- **Type Safety:** Rename in registry → all usages update
+- **Runtime:** Framework converts object to string for the event bus
+
 ## Future Considerations
 
 - Event persistence (store events for replay)
