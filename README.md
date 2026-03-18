@@ -124,6 +124,16 @@ const clientApi = createPublicAPI(api)
 // Client: clientApi.users.delete() - TypeScript Error!
 ```
 
+## Documentation
+
+See the `docs/` folder for detailed technical specifications:
+
+- [docs/SPEC.md](docs/SPEC.md) - Full API specification
+- [docs/core/](docs/core/) - Core concepts (Queries, Middleware, Cache)
+- [docs/features/](docs/features/) - Features (Validation, Plugins, Events, Lifecycle)
+- [docs/advanced/](docs/advanced/) - Advanced topics (Batching, Serialization, etc.)
+- [docs/integration/](docs/integration/) - Integration guides (Next.js, React)
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
