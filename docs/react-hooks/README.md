@@ -4,28 +4,53 @@ This folder contains analysis and proposed implementations for `@deessejs/server
 
 ## Overview
 
-[`TANSTACK_QUERY_ANALYSIS.md`](TANSTACK_QUERY_ANALYSIS.md) provides a comprehensive overview of TanStack Query features and what is currently implemented or missing in `@deessejs/server/react`.
+[`analysis/TANSTACK_QUERY_ANALYSIS.md`](analysis/TANSTACK_QUERY_ANALYSIS.md) provides a comprehensive overview of TanStack Query features and what is currently implemented or missing in `@deessejs/server/react`.
+
+## Directory Structure
+
+```
+react-hooks/
+├── README.md                    # This file
+│
+├── analysis/                   # Analysis & comparisons
+│   └── TANSTACK_QUERY_ANALYSIS.md
+│
+├── integration/                # TanStack Query magic wrapper
+│   ├── MAGIC_WRAPPER.md        # High-level concept
+│   ├── MAGIC_ARCHITECTURE.md   # Complete implementation
+│   ├── DEEP_TANSTACK_INTEGRATION.md
+│   ├── AUTO_INVALIDATION.md
+│   └── CACHE_KEYS_EXTRACTION.md
+│
+└── features/                   # Proposed features
+    ├── INFINITE_QUERIES.md
+    ├── OPTIMISTIC_UPDATES.md
+    ├── DEVTOOLS.md
+    ├── CACHE_PERSISTENCE.md
+    ├── BACKGROUND_REFETCH.md
+    ├── PLACEHOLDER_DATA.md
+    ├── MUTATION_STATE.md
+    └── RETRY_LOGIC.md
+```
 
 ## Magic Wrapper Architecture
 
 The goal is to create a **transparent wrapper** on top of TanStack Query where the server automatically manages everything - no boilerplate needed.
 
-### Core Documents
+### Core Integration Documents
 
 | Document | Description |
 |----------|-------------|
-| [`MAGIC_WRAPPER.md`](MAGIC_WRAPPER.md) | High-level concept of the magic wrapper |
-| [`MAGIC_ARCHITECTURE.md`](MAGIC_ARCHITECTURE.md) | Complete implementation code |
-| [`DEEP_TANSTACK_INTEGRATION.md`](DEEP_TANSTACK_INTEGRATION.md) | Deep dive into TanStack Query internals |
-| [`AUTO_INVALIDATION.md`](AUTO_INVALIDATION.md) | Server-driven cache invalidation |
-| [`CACHE_KEYS_EXTRACTION.md`](CACHE_KEYS_EXTRACTION.md) | Automatic key extraction from server |
+| [`integration/MAGIC_WRAPPER.md`](integration/MAGIC_WRAPPER.md) | High-level concept of the magic wrapper |
+| [`integration/MAGIC_ARCHITECTURE.md`](integration/MAGIC_ARCHITECTURE.md) | Complete implementation code |
+| [`integration/DEEP_TANSTACK_INTEGRATION.md`](integration/DEEP_TANSTACK_INTEGRATION.md) | Deep dive into TanStack Query internals |
+| [`integration/AUTO_INVALIDATION.md`](integration/AUTO_INVALIDATION.md) | Server-driven cache invalidation |
+| [`integration/CACHE_KEYS_EXTRACTION.md`](integration/CACHE_KEYS_EXTRACTION.md) | Automatic key extraction from server |
 
-## Current vs Magic
-
-### Without Magic (Current Implementation)
+### Without vs With Magic
 
 ```typescript
-// Client must manually handle everything
+// Without Magic (current)
 const { data } = useQuery({
   queryKey: ['users', 'list', limit],
   queryFn: () => client.users.list({ limit }),
@@ -37,41 +62,35 @@ const { mutate } = useMutation({
     queryClient.invalidateQueries({ queryKey: ['users', 'list'] })
   },
 })
-```
 
-### With Magic
-
-```typescript
-// Just use the API - everything automatic!
+// With Magic
 const { data } = useQuery(client.users.list, { args: { limit: 10 } })
-
 const { mutate } = useMutation(client.users.create)
 ```
 
-## Proposed Features (from TanStack Query)
+## Proposed Features
 
 ### High Priority
 
 | Feature | File | Description |
 |---------|------|-------------|
-| Infinite Queries | [`INFINITE_QUERIES.md`](INFINITE_QUERIES.md) | Pagination with infinite scrolling |
-| Optimistic Updates | [`OPTIMISTIC_UPDATES.md`](OPTIMISTIC_UPDATES.md) | Immediate UI updates with rollback |
-| DevTools | [`DEVTOOLS.md`](DEVTOOLS.md) | Visual debugging interface |
-| Cache Persistence | [`CACHE_PERSISTENCE.md`](CACHE_PERSISTENCE.md) | Offline support, localStorage/IndexedDB |
+| Infinite Queries | [`features/INFINITE_QUERIES.md`](features/INFINITE_QUERIES.md) | Pagination with infinite scrolling |
+| Optimistic Updates | [`features/OPTIMISTIC_UPDATES.md`](features/OPTIMISTIC_UPDATES.md) | Immediate UI updates with rollback |
+| DevTools | [`features/DEVTOOLS.md`](features/DEVTOOLS.md) | Visual debugging interface |
+| Cache Persistence | [`features/CACHE_PERSISTENCE.md`](features/CACHE_PERSISTENCE.md) | Offline support, localStorage/IndexedDB |
 
 ### Medium Priority
 
 | Feature | File | Description |
 |---------|------|-------------|
-| Background Refetch | [`BACKGROUND_REFETCH.md`](BACKGROUND_REFETCH.md) | Auto-refresh on interval/focus/reconnect |
-| Placeholder Data | [`PLACEHOLDER_DATA.md`](PLACEHOLDER_DATA.md) | Temporary data while loading |
-| Mutation State | [`MUTATION_STATE.md`](MUTATION_STATE.md) | Track multiple mutations |
-| Retry Logic | [`RETRY_LOGIC.md`](RETRY_LOGIC.md) | Automatic retry with backoff |
+| Background Refetch | [`features/BACKGROUND_REFETCH.md`](features/BACKGROUND_REFETCH.md) | Auto-refresh on interval/focus/reconnect |
+| Placeholder Data | [`features/PLACEHOLDER_DATA.md`](features/PLACEHOLDER_DATA.md) | Temporary data while loading |
+| Mutation State | [`features/MUTATION_STATE.md`](features/MUTATION_STATE.md) | Track multiple mutations |
+| Retry Logic | [`features/RETRY_LOGIC.md`](features/RETRY_LOGIC.md) | Automatic retry with backoff |
 
 ## Architecture Comparison
 
 ### TanStack Query (Client-Driven)
-
 ```
 Client → Query Key → Fetch → Cache → Notify
          ↑
@@ -79,7 +98,6 @@ Client → Query Key → Fetch → Cache → Notify
 ```
 
 ### @deessejs/server/react (Server-Driven)
-
 ```
 Server Query → Returns Keys → Client Cache → Auto-invalidate
                               ↑
@@ -87,22 +105,6 @@ Server Query → Returns Keys → Client Cache → Auto-invalidate
 ```
 
 The server-driven approach simplifies the API but limits some advanced use cases. The magic wrapper bridges this gap by automating everything while using TanStack Query under the hood.
-
-## Usage
-
-```typescript
-import { useMagicQuery, useMagicMutation } from "@deessejs/server/react/magic"
-
-// Query with auto-cache
-const { data } = useMagicQuery(client.users.list, {
-  args: { limit: 10 },
-})
-
-// Mutation with auto-invalidation
-const { mutate } = useMagicMutation(client.users.create)
-await mutate({ name: "John" })
-// Automatically refetches related queries
-```
 
 ## See Also
 
