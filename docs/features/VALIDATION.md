@@ -2,19 +2,96 @@
 
 ## Overview
 
-The validation system supports multiple validation libraries through a standardized interface. While Zod is the default, you can use Valibot, ArkType, Typia, or any library that implements the validation interface.
+The validation system supports multiple validation libraries through the **Standard Schema** interface. This allows you to use any validation library (Zod, Valibot, ArkType, Typia) without adapter code - `@deessejs` automatically detects and works with any library implementing the standard.
+
+## Zero-Dependency Core
+
+`@deessejs/server` core has **zero validation dependencies**. You choose which library to use:
+
+```typescript
+// No validator configured = use any Standard Schema compatible library
+const { t, createAPI } = defineContext({
+  context: { db: myDatabase }
+})
+
+// Works with Zod, Valibot, ArkType, Typia - any of them!
+const getUser = t.query({
+  args: z.object({ id: z.number() }),  // Zod
+  handler: async (ctx, args) => { ... }
+})
+```
 
 ## Supported Libraries
 
-| Library | Size (minified) | Performance | TypeScript |
-|---------|----------------|-------------|------------|
-| Zod | ~30KB | Good | Excellent |
-| Valibot | ~6KB | Excellent | Excellent |
-| ArkType | ~12KB | Excellent | Excellent |
-| Yup | ~25KB | Good | Good |
-| Superstruct | ~15KB | Good | Good |
+| Library | Size | Standard Schema | Performance |
+|---------|------|-----------------|-------------|
+| **Valibot** | ~6KB | ✅ Yes | Excellent |
+| **ArkType** | ~12KB | ✅ Yes | Excellent |
+| **Zod** | ~30KB | ✅ Yes (v3) | Good |
+| **Typia** | ~0KB* | ✅ Yes | Fastest |
+| Yup | ~25KB | ❌ No | Good |
+| Superstruct | ~15KB | ❌ No | Good |
 
-## Default: Zod
+*Typia generates validation code at compile time, no runtime bundle.
+
+## Standard Schema
+
+The [Standard Schema](https://standard-schema.dev) is a unified interface that lets any validation library work together. Libraries implement `StandardSchemaV1` which provides:
+
+- `validate(input)` - Validate data
+- `~standard.types.input` - Input type inference
+- `~standard.types.output` - Output type inference
+
+### How It Works
+
+```typescript
+import { type } from "arktype"
+import * as v from "valibot"
+import { z } from "zod"
+
+function validate<T extends StandardSchemaV1>(
+  schema: T,
+  input: StandardSchemaV1.InferInput<T>
+): StandardSchemaV1.InferOutput<T> {
+  const result = schema["~standard"].validate(input)
+  if (result.issues) throw new Error(result.issues)
+  return result.value
+}
+
+// All work the same way!
+validate(z.string(), "hello")           // Zod
+validate(v.string(), "hello")           // Valibot
+validate(type("string"), "hello")       // ArkType
+```
+
+### Auto-Detection
+
+`@deessejs` automatically detects which library you're using:
+
+```typescript
+// Just use any Standard Schema compatible library
+const getUser = t.query({
+  args: z.object({ id: z.number() }),  // Detected as Zod
+  handler: async (ctx, args) => { ... }
+})
+
+const createUser = t.mutation({
+  args: v.object({                       // Detected as Valibot
+    name: v.string(),
+    email: v.pipe(v.string(), v.email())
+  }),
+  handler: async (ctx, args) => { ... }
+})
+
+const getPost = t.query({
+  args: type({ id: "number" }),         // Detected as ArkType
+  handler: async (ctx, args) => { ... }
+})
+```
+
+## Usage Examples
+
+### With Zod
 
 ```typescript
 import { z } from "zod"
@@ -30,120 +107,28 @@ const getUser = t.query({
 })
 ```
 
-## Using Valibot
-
-### Installation
-
-```bash
-pnpm add valibot
-```
-
-### Configuration
+### With Valibot
 
 ```typescript
-import { defineContext } from "@deessejs/server"
-import { valibot } from "deessejs/validators"
-
-const { t, createAPI } = defineContext({
-  context: { db: myDatabase },
-  validator: valibot  // Use Valibot
-})
-
-// Now use Valibot schemas
 import { v } from "valibot"
 
-const getUser = t.query({
-  args: v.object({
-    id: v.number()
-  }),
-  handler: async (ctx, args) => { ... }
-})
-```
-
-### Full Example
-
-```typescript
-import { defineContext } from "@deessejs/server"
-import { valibot } from "deessejs/validators"
-import { v } from "valibot"
-
-const { t, createAPI } = defineContext({
-  context: { db: myDatabase },
-  validator: valibot
-})
-
-// Query with Valibot
 const getUser = t.query({
   args: v.object({
     id: v.number(),
     include: v.optional(v.string())
   }),
   handler: async (ctx, args) => {
-    const user = await ctx.db.users.find(args.id, {
-      include: args.include
-    })
-    return ok(user)
-  }
-})
-
-// Mutation with Valibot
-const createUser = t.mutation({
-  args: v.object({
-    name: v.pipe(v.string(), v.minLength(2), v.maxLength(100)),
-    email: v.pipe(v.string(), v.email()),
-    age: v.optional(v.number())
-  }),
-  handler: async (ctx, args) => {
-    const user = await ctx.db.users.create(args)
+    const user = await ctx.db.users.find(args.id)
     return ok(user)
   }
 })
 ```
 
-## Using ArkType
-
-### Installation
-
-```bash
-pnpm add arktype
-```
-
-### Configuration
+### With ArkType
 
 ```typescript
-import { defineContext } from "@deessejs/server"
-import { arktype } from "deessejs/validators"
-
-const { t, createAPI } = defineContext({
-  context: { db: myDatabase },
-  validator: arktype
-})
-
-// Now use ArkType schemas
 import { type } from "arktype"
 
-const getUser = t.query({
-  args: type({
-    id: "number",
-    include: "string?"
-  }),
-  handler: async (ctx, args) => { ... }
-})
-```
-
-### Full Example
-
-```typescript
-import { defineContext } from "@deessejs/server"
-import { arktype } from "deessejs/validators"
-import { type } from "arktype"
-
-const { t, createAPI } = defineContext({
-  context: { db: myDatabase },
-  validator: arktype
-})
-
-// Query with ArkType
 const getUser = t.query({
   args: type({
     id: "number",
@@ -154,210 +139,95 @@ const getUser = t.query({
     return ok(user)
   }
 })
+```
 
-// Mutation with ArkType
-const createUser = t.mutation({
-  args: type({
-    name: "string >= 2 <= 100",
-    email: "string.email",
-    age: "number?"
-  }),
+### With Typia
+
+```typescript
+import { typia } from "typia"
+
+const getUser = t.query({
+  args: typia<{ id: number }>(),
   handler: async (ctx, args) => {
-    const user = await ctx.db.users.create(args)
+    const user = await ctx.db.users.find(args.id)
     return ok(user)
   }
 })
 ```
 
-## Using Custom Validator
+## Client-Side Validation
 
-### Validator Interface
-
-```typescript
-interface Validator {
-  // Create a schema from a definition
-  schema<T>(definition: unknown): Schema<T>
-
-  // Validate data against a schema
-  parse<T>(schema: Schema<T>, data: unknown): T
-
-  // Get type from schema (for TypeScript inference)
-  infer<T>(schema: Schema<T>): T
-}
-
-interface Schema<T> {
-  // Validation
-  _parse(data: unknown): { success: true; data: T } | { success: false; error: Error }
-
-  // TypeScript type
-  readonly type: T
-}
-```
-
-### Implementation
+You can also use the same validator on the client to validate before sending:
 
 ```typescript
-import { defineContext, createValidator } from "@deessejs/server"
-import { parse, string, number, object, optional } from "my-custom-validator"
+// Client-side validation (avoids unnecessary network requests)
+import * as v from "valibot"
 
-// Create custom validator adapter
-const myValidator = createValidator({
-  schema: (def) => object(def),
-  parse: (schema, data) => {
-    const result = schema.parse(data)
-    if (!result.valid) throw new Error(result.errors.join(", "))
-    return result.data
-  },
-  infer: (schema) => schema.type
-})
+const validateInput = (data: unknown) => {
+  const schema = v.object({
+    name: v.pipe(v.string(), v.minLength(2)),
+    email: v.pipe(v.string(), v.email())
+  })
 
-const { t, createAPI } = defineContext({
-  context: { db: myDatabase },
-  validator: myValidator
-})
-```
-
-## Schema Definition
-
-### Query Args
-
-```typescript
-// Zod
-const getUser = t.query({
-  args: z.object({
-    id: z.number(),
-    include: z.string().optional()
-  }),
-  handler: async (ctx, args) => { ... }
-})
-
-// Valibot
-const getUser = t.query({
-  args: v.object({
-    id: v.number(),
-    include: v.optional(v.string())
-  }),
-  handler: async (ctx, args) => { ... }
-})
-
-// ArkType
-const getUser = t.query({
-  args: type({
-    id: "number",
-    include: "string?"
-  }),
-  handler: async (ctx, args) => { ... }
-})
-```
-
-### Mutation Args
-
-```typescript
-// Zod
-const createUser = t.mutation({
-  args: z.object({
-    name: z.string().min(2).max(100),
-    email: z.string().email(),
-    age: z.number().min(0).optional()
-  }),
-  handler: async (ctx, args) => { ... }
-})
-```
-
-### Middleware Args
-
-```typescript
-const rateLimit = t.middleware({
-  args: z.object({
-    maxRequests: z.number().min(1).max(1000).default(100),
-    windowMs: z.number().min(1000).default(60000)
-  }),
-  handler: async (ctx, next) => { ... }
-})
-```
-
-## Type Inference
-
-### Automatic Inference
-
-Types are automatically inferred from schemas:
-
-```typescript
-const createUser = t.mutation({
-  args: z.object({
-    name: z.string(),
-    email: z.string().email()
-  }),
-  handler: async (ctx, args) => {
-    // args is typed automatically!
-    // { name: string, email: string }
-    return ok(args)
+  const result = schema["~standard"].validate(data)
+  if (result.issues) {
+    return { ok: false, issues: result.issues }
   }
-})
+  return { ok: true, value: result.value }
+}
+
+// Use before calling API
+const validation = validateInput({ name: "J", email: "invalid" })
+if (!validation.ok) {
+  // Show error immediately - no network request needed!
+  return
+}
+
+// Only send if valid
+await clientApi.users.create(validation.value)
 ```
 
-### Manual Inference
+This is where **Valibot shines** - at ~6KB, you can bundle it with your client code for instant validation feedback.
+
+## Error Normalization
+
+Different libraries have different error formats:
 
 ```typescript
-import { InferArgs } from "@deessejs/server"
-
-const createUserArgs = z.object({
-  name: z.string(),
-  email: z.string().email()
-})
-
-type CreateUserArgs = InferArgs<typeof createUserArgs>
-// { name: string, email: string }
+// Zod: result.error.issues
+// Valibot: result.issues
+// ArkType: result.errors
 ```
 
-## Error Handling
-
-### Validation Errors
+`@deessejs` normalizes all errors to a unified format:
 
 ```typescript
-const getUser = t.query({
-  args: z.object({
-    id: z.number()
-  }),
-  handler: async (ctx, args) => { ... }
-})
-
-// When invalid args are passed:
-// HTTP 400 Bad Request
+// All validators produce the same error format
 {
   "ok": false,
   "error": {
     "code": "VALIDATION_ERROR",
     "message": "Validation failed",
     "details": [
-      { "path": "id", "message": "Expected number, received string" }
+      { "path": "email", "message": "Invalid email format" },
+      { "path": "name", "message": "Must be at least 2 characters" }
     ]
   }
 }
-```
-
-### Custom Error Messages
-
-```typescript
-const createUser = t.mutation({
-  args: z.object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
-    age: z.number().min(0, "Age must be positive").optional()
-  }),
-  handler: async (ctx, args) => { ... }
-})
 ```
 
 ## Performance Comparison
 
 ### Bundle Size
 
-| Library | Bundle Size | Gzipped |
-|---------|-------------|---------|
-| Zod | 30KB | 10KB |
-| Valibot | 6KB | 2KB |
-| ArkType | 12KB | 4KB |
+| Configuration | Bundle Size | Reduction |
+|----------------|-------------|-----------|
+| @deessejs + Zod | ~40KB | baseline |
+| @deessejs + Valibot | ~16KB | -60% |
+| @deessejs + ArkType | ~22KB | -45% |
+| @deessejs + Typia | ~10KB* | -75% |
+
+*Typia has 0KB runtime footprint.
 
 ### Parse Time (10,000 iterations)
 
@@ -366,6 +236,9 @@ const createUser = t.mutation({
 | Zod | 45ms |
 | Valibot | 15ms |
 | ArkType | 12ms |
+| Typia | 2ms* |
+
+*Typia compiles validation at build time.
 
 ## Recommendations
 
@@ -373,19 +246,25 @@ const createUser = t.mutation({
 
 - Bundle size is critical (mobile, edge)
 - You need excellent TypeScript inference
-- Performance is important
-
-### Use Zod When
-
-- You need ecosystem compatibility
-- You have existing Zod schemas
-- You need extensive documentation
+- You want fast validation without build complexity
 
 ### Use ArkType When
 
 - You want the best TypeScript inference
 - You need excellent performance
-- You're building a new project
+- You're starting a new project
+
+### Use Zod When
+
+- You have existing Zod schemas
+- You need ecosystem compatibility
+- You prefer mature tooling
+
+### Use Typia When
+
+- Performance is critical (compile-time validation)
+- You don't mind build complexity
+- You want zero runtime overhead
 
 ## Migration Guide
 
@@ -394,7 +273,6 @@ const createUser = t.mutation({
 ```typescript
 // Zod
 import { z } from "zod"
-
 const schema = z.object({
   name: z.string().min(2),
   email: z.string().email()
@@ -402,7 +280,6 @@ const schema = z.object({
 
 // Valibot
 import { v } from "valibot"
-
 const schema = v.object({
   name: v.pipe(v.string(), v.minLength(2)),
   email: v.pipe(v.string(), v.email())
@@ -414,7 +291,6 @@ const schema = v.object({
 ```typescript
 // Zod
 import { z } from "zod"
-
 const schema = z.object({
   name: z.string().min(2),
   email: z.string().email()
@@ -422,7 +298,6 @@ const schema = z.object({
 
 // ArkType
 import { type } from "arktype"
-
 const schema = type({
   name: "string >= 2",
   email: "string.email"
@@ -433,5 +308,5 @@ const schema = type({
 
 - Runtime schema generation
 - Schema versioning
-- Schema migration tools
 - Built-in validators for common patterns
+- Automatic migration tools
