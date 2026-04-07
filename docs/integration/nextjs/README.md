@@ -28,11 +28,12 @@ export const client = createClient(drpc)
 import { client } from "@/server/drpc"
 import { toNextJsHandler } from "@deessejs/drpc-next"
 
-export const { POST, GET } = toNextJsHandler(client)
+export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
 ```
 
 The handler automatically:
 - Exposes all `query()` and `mutation()` operations via HTTP
+- Supports all standard HTTP methods (GET, POST, PUT, PATCH, DELETE)
 - Protects `internalQuery()` and `internalMutation()` (server-only)
 - Handles JSON serialization/deserialization
 - Returns typed responses

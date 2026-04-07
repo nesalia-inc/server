@@ -29,15 +29,20 @@ Creates Next.js route handlers from a client API instance.
 import { client } from "@/server/drpc"
 import { toNextJsHandler } from "@deessejs/drpc-next"
 
-export const { POST, GET } = toNextJsHandler(client)
+export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
 ```
 
 ### Supported Methods
 
 | Method | Description |
 |--------|-------------|
-| `POST` | JSON body with `{ procedure: "namespace.name", args: { ... } }` |
-| `GET` | Query params with `?procedure=namespace.name&args=...` |
+| `GET` | Query operations - args via URL search params |
+| `POST` | Mutation operations (create) - args via JSON body |
+| `PUT` | Mutation operations (update/replace) - args via JSON body |
+| `PATCH` | Mutation operations (partial update) - args via JSON body |
+| `DELETE` | Mutation operations (delete) - args via JSON body |
+
+All methods extract the procedure name from the URL path (e.g., `/api/users.get` → `users.get` procedure).
 
 ### Example
 

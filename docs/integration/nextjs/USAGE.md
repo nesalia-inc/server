@@ -82,7 +82,7 @@ You can combine multiple route handlers in the same Next.js application:
 import { auth } from "@/lib/auth"
 import { toNextJsHandler } from "better-auth/next-js"
 
-export const { POST, GET } = toNextJsHandler(auth)
+export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(auth)
 ```
 
 ```typescript
@@ -90,100 +90,126 @@ export const { POST, GET } = toNextJsHandler(auth)
 import { client } from "@/server/drpc"
 import { toNextJsHandler } from "@deessejs/drpc-next"
 
-export const { POST, GET } = toNextJsHandler(client)
+export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
 ```
 
 ## CRUD Examples
 
+All procedure calls from the browser use fetch to the route handler.
+
 ### List with Pagination
 
 ```typescript
-// Query
-const users = await client.users.list({
-  limit: 10,
-  offset: 0,
+// GET request - procedure name in URL path
+const response = await fetch("/api/drpc/users.list?args={\"limit\":10,\"offset\":0}", {
+  method: "GET",
 })
 
-if (users.ok) {
-  console.log(users.value) // { items: [...], total: 100 }
+const { ok, value, error } = await response.json()
+if (ok) {
+  console.log(value) // { items: [...], total: 100 }
 }
 ```
 
 ### Get Single Resource
 
 ```typescript
-// Query
-const user = await client.users.get({ id: 1 })
+// GET request
+const response = await fetch("/api/drpc/users.get?args={\"id\":1}", {
+  method: "GET",
+})
 
-if (user.ok) {
-  console.log(user.value.name) // "John"
+const { ok, value, error } = await response.json()
+if (ok) {
+  console.log(value.name) // "John"
 } else {
-  console.error(user.error.message) // "User not found"
+  console.error(error.message) // "User not found"
 }
 ```
 
 ### Create Resource
 
 ```typescript
-// Mutation
-const result = await client.users.create({
-  name: "John",
-  email: "john@example.com",
+// POST request - args in JSON body
+const response = await fetch("/api/drpc/users.create", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    args: { name: "John", email: "john@example.com" },
+  }),
 })
 
-if (result.ok) {
-  console.log(result.value.id) // 123
+const { ok, value, error } = await response.json()
+if (ok) {
+  console.log(value.id) // 123
 }
 ```
 
 ### Update Resource
 
 ```typescript
-// Mutation
-const result = await client.users.update({
-  id: 1,
-  name: "Jane",
+// PUT or PATCH request
+const response = await fetch("/api/drpc/users.update", {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    args: { id: 1, name: "Jane" },
+  }),
 })
 
-if (result.ok) {
-  console.log(result.value.name) // "Jane"
+const { ok, value } = await response.json()
+if (ok) {
+  console.log(value.name) // "Jane"
 }
 ```
 
 ### Delete Resource
 
 ```typescript
-// Mutation
-const result = await client.users.delete({ id: 1 })
+// DELETE request
+const response = await fetch("/api/drpc/users.delete", {
+  method: "DELETE",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    args: { id: 1 },
+  }),
+})
 
-if (result.ok) {
-  console.log(result.value.success) // true
+const { ok, value } = await response.json()
+if (ok) {
+  console.log(value.success) // true
 }
 ```
 
 ### Search
 
 ```typescript
-// Query
-const users = await client.users.search({
-  query: "john",
-  limit: 5,
+// GET request with query params
+const response = await fetch("/api/drpc/users.search?args={\"query\":\"john\",\"limit\":5}", {
+  method: "GET",
 })
 
-if (users.ok) {
-  console.log(users.value) // [...]
+const { ok, value } = await response.json()
+if (ok) {
+  console.log(value) // [...]
 }
 ```
 
 ## Error Handling
 
 ```typescript
-const result = await client.users.create({
-  email: "invalid-email",
+const response = await fetch("/api/drpc/users.create", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    args: { email: "invalid-email" },
+  }),
 })
 
-if (!result.ok) {
-  switch (result.error.code) {
+const { ok, error } = await response.json()
+
+if (!ok) {
+  switch (error.code) {
     case "VALIDATION_ERROR":
       console.log("Invalid input")
       break

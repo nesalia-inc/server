@@ -5,10 +5,10 @@
  *
  * Usage:
  * ```typescript
- * import { drpc } from "@/server/drpc"
+ * import { client } from "@/server/drpc"
  * import { toNextJsHandler } from "@deessejs/drpc-next"
  *
- * export const { POST, GET } = toNextJsHandler(drpc)
+ * export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
  * ```
  */
 
@@ -16,6 +16,8 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 type DRPCClient = Record<string, unknown>
+
+type HTTPMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
 
 /**
  * Recursively resolves a procedure from the DRPC client by traversing
@@ -39,90 +41,135 @@ function getProcedure(
 }
 
 /**
- * Creates Next.js route handlers (POST and GET) for the DRPC client.
- *
- * POST handler:
- * - Receives requests with procedure name in URL path (e.g., /api/users.get)
- * - Receives args in request body as { args: {...} }
- * - Calls the appropriate procedure via local execution
- * - Returns JSON response { ok: true, value } or { ok: false, error }
- * - Only exposes public operations (query/mutation), not internalQuery/internalMutation
- *
- * GET handler:
- * - Returns 405 Method Not Allowed
- *
- * @param api - The DRPC client (created via createPublicAPI)
- * @returns Object with POST and GET route handlers
+ * Execute a procedure and format the response.
  */
-export function toNextJsHandler(api: DRPCClient): {
-  POST: (request: NextRequest) => Promise<NextResponse>
-  GET: () => NextResponse
-} {
-  const POST = async (request: NextRequest): Promise<NextResponse> => {
-    try {
-      // Extract procedure name from URL path
-      // URL format: /api/procedure.name (captured as [...slug])
-      const url = new URL(request.url)
-      const pathname = url.pathname
-      const slugStr = pathname.replace(/^\//, "") // Remove leading slash
-
-      if (!slugStr) {
-        return NextResponse.json(
-          { ok: false, error: { message: "Procedure name required" } },
-          { status: 400 }
-        )
-      }
-
-      const slugParts = slugStr.split(".")
-      const procedure = getProcedure(api, slugParts)
-
-      if (!procedure) {
-        return NextResponse.json(
-          { ok: false, error: { message: `Procedure not found: ${slugStr}` } },
-          { status: 404 }
-        )
-      }
-
-      // Parse request body
-      let body: { args?: unknown } | null = null
-      try {
-        body = await request.json()
-      } catch {
-        return NextResponse.json(
-          { ok: false, error: { message: "Invalid JSON body" } },
-          { status: 400 }
-        )
-      }
-
-      const args = body?.args ?? {}
-
-      // Execute procedure
-      // The procedure is a function that accepts args and returns a result
-      const procedureFn = procedure as (args: unknown) => Promise<unknown>
-      const result = await procedureFn(args)
-
-      return NextResponse.json({ ok: true, value: result })
-    } catch (error) {
+async function executeProcedure(
+  procedure: unknown,
+  args: unknown
+): Promise<NextResponse> {
+  try {
+    if (!procedure) {
       return NextResponse.json(
-        {
-          ok: false,
-          error: {
-            message: error instanceof Error ? error.message : "Unknown error",
-          },
-        },
-        { status: 500 }
+        { ok: false, error: { message: "Procedure not found" } },
+        { status: 404 }
       )
     }
-  }
 
-  const GET = (): NextResponse => {
+    const procedureFn = procedure as (args: unknown) => Promise<unknown>
+    const result = await procedureFn(args)
+
+    return NextResponse.json({ ok: true, value: result })
+  } catch (error) {
     return NextResponse.json(
-      { ok: false, error: { message: "Method not allowed" } },
-      { status: 405 }
+      {
+        ok: false,
+        error: {
+          message: error instanceof Error ? error.message : "Unknown error",
+        },
+      },
+      { status: 500 }
     )
   }
+}
 
-  return { POST, GET }
+/**
+ * Creates Next.js route handlers for all HTTP methods.
+ *
+ * | Method | Description |
+ * |--------|-------------|
+ * | GET | Query operations (list, get, search) |
+ * | POST | Mutation operations (create) |
+ * | PUT | Mutation operations (update/replace) |
+ * | PATCH | Mutation operations (partial update) |
+ * | DELETE | Mutation operations (delete) |
+ *
+ * The procedure name is extracted from the URL path:
+ * - /api/users.list → users.list procedure
+ * - /api/users.get → users.get procedure
+ * - /api/users.create → users.create procedure
+ *
+ * All methods accept JSON body: { args: { ... } }
+ *
+ * @param api - The DRPC client (created via createClient)
+ * @returns Object with GET, POST, PUT, PATCH, DELETE route handlers
+ */
+export function toNextJsHandler(api: DRPCClient): {
+  GET: (request: NextRequest) => Promise<NextResponse>
+  POST: (request: NextRequest) => Promise<NextResponse>
+  PUT: (request: NextRequest) => Promise<NextResponse>
+  PATCH: (request: NextRequest) => Promise<NextResponse>
+  DELETE: (request: NextRequest) => Promise<NextResponse>
+} {
+  /**
+   * Extract procedure name and args from request.
+   */
+  async function parseRequest(request: NextRequest): Promise<{
+    procedure: unknown
+    args: unknown
+  }> {
+    const url = new URL(request.url)
+    const pathname = url.pathname
+    const slugStr = pathname.replace(/^\//, "") // Remove leading slash
+
+    if (!slugStr) {
+      return {
+        procedure: null,
+        args: {},
+      }
+    }
+
+    const slugParts = slugStr.split(".")
+    const procedure = getProcedure(api, slugParts)
+
+    let args = {}
+    if (request.method !== "GET") {
+      try {
+        const body = await request.json()
+        args = body?.args ?? {}
+      } catch {
+        // Invalid JSON, use empty args
+      }
+    } else {
+      // For GET, try to get args from searchParams
+      const argsStr = url.searchParams.get("args")
+      if (argsStr) {
+        try {
+          args = JSON.parse(argsStr)
+        } catch {
+          // Invalid JSON, use empty args
+        }
+      }
+    }
+
+    return { procedure, args }
+  }
+
+  const GET = async (request: NextRequest): Promise<NextResponse> => {
+    const { procedure, args } = await parseRequest(request)
+    return executeProcedure(procedure, args)
+  }
+
+  const POST = async (request: NextRequest): Promise<NextResponse> => {
+    const { procedure, args } = await parseRequest(request)
+    return executeProcedure(procedure, args)
+  }
+
+  const PUT = async (request: NextRequest): Promise<NextResponse> => {
+    const { procedure, args } = await parseRequest(request)
+    return executeProcedure(procedure, args)
+  }
+
+  const PATCH = async (request: NextRequest): Promise<NextResponse> => {
+    const { procedure, args } = await parseRequest(request)
+    return executeProcedure(procedure, args)
+  }
+
+  const DELETE = async (request: NextRequest): Promise<NextResponse> => {
+    const { procedure, args } = await parseRequest(request)
+    return executeProcedure(procedure, args)
+  }
+
+  return { GET, POST, PUT, PATCH, DELETE }
 }
 
 /**
@@ -131,7 +178,7 @@ export function toNextJsHandler(api: DRPCClient): {
  * Creates a Next.js route handler for the DRPC client.
  * This is a compatibility alias for the POST handler only.
  *
- * @param client - The DRPC client (created via createPublicAPI)
+ * @param client - The DRPC client (created via createClient)
  * @returns POST route handler
  */
 export function createRouteHandler(

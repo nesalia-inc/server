@@ -143,28 +143,23 @@ export const client = createClient(drpc)
 import { client } from "@/server/drpc"
 import { toNextJsHandler } from "@deessejs/drpc-next"
 
-export const { POST, GET } = toNextJsHandler(client)
+export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
 ```
 
 ## 3. Call from Client
 
 ```typescript
-// Client-side RPC call
-const result = await fetch("/api/drpc", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    procedure: "users.get",
-    args: { id: 123 },
-  }),
+// Client-side RPC call - procedure name in URL path
+const response = await fetch("/api/drpc/users.get?args={\"id\":1}", {
+  method: "GET",
 })
 
-const response = await result.json()
+const { ok, value, error } = await response.json()
 
-if (response.ok) {
-  console.log(response.value) // typed user data
+if (ok) {
+  console.log(value) // typed user data
 } else {
-  console.error(response.error) // { code: "NOT_FOUND", message: "..." }
+  console.error(error) // { code: "NOT_FOUND", message: "..." }
 }
 ```
 
@@ -175,11 +170,11 @@ my-app/
 ├── app/
 │   ├── api/
 │   │   └── drpc/
-│   │       └── route.ts      # Route handler
+│   │       └── route.ts      # Route handler (exposes client via HTTP)
 │   └── admin/
-│       └── page.tsx          # Server Component (uses drpc)
+│       └── page.tsx          # Server Component (uses drpc directly)
 ├── components/
-│   └── UserList.tsx          # Client Component (uses client)
+│   └── UserList.tsx          # Client Component (calls via fetch)
 └── server/
     └── drpc.ts               # API definitions
 ```
