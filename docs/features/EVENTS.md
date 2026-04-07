@@ -8,6 +8,8 @@ The event system provides a publish-subscribe mechanism integrated into `@deesse
 
 ### Event Emission (`ctx.send`)
 
+> **Note:** `ctx.send()` is not yet implemented. This is a planned feature.
+
 The context provides a `send` method to emit events. Events are typed and can carry arbitrary data.
 
 > **Important Distinction:** Events follow a **"Fire and Forget"** pattern (1 → N). If you need a synchronous response, use **Lifecycle Hooks** (`.on("beforeInvoke")`, `.on("onSuccess")`, `.on("onError")`) instead.

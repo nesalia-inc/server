@@ -30,7 +30,7 @@ useQuery({
 
 ```typescript
 function UserList() {
-  const { data, isLoading } = useQuery(api.users.list, {
+  const { data, isLoading } = useQuery(client.users.list, {
     args: { limit: 10 },
     placeholder: [],
   })
@@ -50,7 +50,7 @@ function UserList() {
 
 ```typescript
 function PostList() {
-  const { data, isLoading } = useQuery(api.posts.list, {
+  const { data, isLoading } = useQuery(client.posts.list, {
     args: { limit: 10 },
     placeholder: {
       items: [],
@@ -72,7 +72,7 @@ function PostList() {
 
 ```typescript
 function PaginatedList({ page }) {
-  const { data, isFetching } = useQuery(api.posts.list, {
+  const { data, isFetching } = useQuery(client.posts.list, {
     args: { page, limit: 10 },
     placeholder: 'keepPrevious', // Keep previous data while fetching
   })
@@ -150,7 +150,7 @@ const listUsers = t.query({
 
 // Client shows skeleton
 function UserList() {
-  const { data } = useQuery(api.users.list, {
+  const { data } = useQuery(client.users.list, {
     args: { limit: 10 },
     placeholder: {
       items: Array(10).fill(null),
@@ -179,7 +179,7 @@ function UserList() {
 
 ```typescript
 function PaginatedUsers({ page }) {
-  const { data, isLoading } = useQuery(api.users.list, {
+  const { data, isLoading } = useQuery(client.users.list, {
     args: { page, limit: 20 },
     placeholder: 'keepPrevious',
   })
@@ -206,7 +206,7 @@ function PaginatedUsers({ page }) {
 
 ```typescript
 function FilteredList({ filter }) {
-  const { data, isLoading } = useQuery(api.posts.list, {
+  const { data, isLoading } = useQuery(client.posts.list, {
     args: { filter },
     placeholder: 'keepPrevious',
   })
@@ -225,7 +225,7 @@ function FilteredList({ filter }) {
 
 ```typescript
 function SearchResults({ query }) {
-  const { data, isLoading } = useQuery(api.search.posts, {
+  const { data, isLoading } = useQuery(client.search.posts, {
     args: { q: query },
     placeholder: [],
     staleTime: 0, // Always fresh search results

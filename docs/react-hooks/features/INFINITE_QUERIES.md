@@ -69,7 +69,7 @@ function PostList() {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
-  } = useInfiniteQuery(api.posts.list, {
+  } = useInfiniteQuery(client.posts.list, {
     args: { limit: 10 },
     getNextPageParam: (lastPage) => lastPage.nextCursor,
   })

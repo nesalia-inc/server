@@ -39,7 +39,7 @@ import { useMutationState } from "@deessejs/drpc/react"
 function CreatePostForm() {
   const [title, setTitle] = useState('')
 
-  const { mutate } = useMutation(api.posts.create)
+  const { mutate } = useMutation(client.posts.create)
 
   return (
     <form onSubmit={() => mutate({ title })}>
@@ -156,8 +156,8 @@ function CreateUserForm() {
     bio: '',
   })
 
-  const createUser = useMutation(api.users.create)
-  const createProfile = useMutation(api.profiles.create)
+  const createUser = useMutation(client.users.create)
+  const createProfile = useMutation(client.profiles.create)
 
   const handleSubmit = async () => {
     const user = await createUser.mutateAsync({
@@ -205,7 +205,7 @@ function CreateUserForm() {
 
 ```typescript
 function LikeButton({ postId }) {
-  const { mutate, isPending } = useMutation(api.posts.like, {
+  const { mutate, isPending } = useMutation(client.posts.like, {
     onMutate: async ({ postId }) => {
       // Optimistic update
       queryClient.setQueryData(['posts', postId], (old) => ({
@@ -236,7 +236,7 @@ function LikeCount({ postId }) {
     0
   )
 
-  const { data } = useQuery(api.posts.get, { args: { id: postId } })
+  const { data } = useQuery(client.posts.get, { args: { id: postId } })
 
   return <span>{(data?.likes || 0) + optimisticLikes}</span>
 }

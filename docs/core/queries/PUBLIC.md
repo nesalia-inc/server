@@ -321,13 +321,13 @@ const listUsers = t.query({
       ctx.db.users.count()
     ])
 
-    return withMetadata(ok({
+    return withMetadata({
       items: users,
       page: args.page,
       limit: args.limit,
       total,
       hasMore: args.page * args.limit < total
-    }), {
+    }, {
       keys: ["users", "list", { page: args.page }]
     })
   }

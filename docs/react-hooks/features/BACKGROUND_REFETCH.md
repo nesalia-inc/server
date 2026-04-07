@@ -121,31 +121,31 @@ function useQuery(query, options) {
 
 ```typescript
 // Auto-refresh every 30 seconds
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   refetchInterval: 30000,
 })
 
 // Refetch on window focus
-const { data } = useQuery(api.user.profile, {
+const { data } = useQuery(client.user.profile, {
   args: { userId },
   refetchOnWindowFocus: true,
 })
 
 // Refetch on reconnect
-const { data } = useQuery(api.settings.all, {
+const { data } = useQuery(client.settings.all, {
   args: {},
   refetchOnReconnect: true,
 })
 
 // Always refetch on focus (even if not stale)
-const { data } = useQuery(api.notifications.unread, {
+const { data } = useQuery(client.notifications.unread, {
   args: {},
   refetchOnWindowFocus: 'always',
 })
 
 // Continuous refetch even in background
-const { data } = useQuery(api.liveScores, {
+const { data } = useQuery(client.liveScores, {
   args: {},
   refetchInterval: 5000,
   refetchIntervalInBackground: true,
@@ -157,7 +157,7 @@ const { data } = useQuery(api.liveScores, {
 ### Stale Time Integration
 
 ```typescript
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   staleTime: 60000, // Data is fresh for 60 seconds
   refetchInterval: 30000, // But check every 30 seconds
@@ -174,7 +174,7 @@ const isStale = (query) => {
 ### Conditional Refetch
 
 ```typescript
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   refetchOnWindowFocus: (query) => {
     // Only refetch if user was inactive for more than 5 minutes
@@ -198,7 +198,7 @@ const queryClient = new QueryClient({
 })
 
 // Per-query override
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   staleTime: 60000, // Override global
   refetchOnWindowFocus: false, // Disable for this query
@@ -251,7 +251,7 @@ const isOnline = onlineManager.isOnline()
 
 ```typescript
 function StockTicker({ symbol }) {
-  const { data } = useQuery(api.stocks.price, {
+  const { data } = useQuery(client.stocks.price, {
     args: { symbol },
     refetchInterval: 1000, // Every second
     refetchIntervalInBackground: false,
@@ -265,7 +265,7 @@ function StockTicker({ symbol }) {
 
 ```typescript
 function NotificationBadge() {
-  const { data } = useQuery(api.notifications.unread, {
+  const { data } = useQuery(client.notifications.unread, {
     args: {},
     refetchInterval: 60000, // Every minute
     refetchOnWindowFocus: true,
@@ -279,7 +279,7 @@ function NotificationBadge() {
 
 ```typescript
 function UserProfile() {
-  const { data } = useQuery(api.auth.me, {
+  const { data } = useQuery(client.auth.me, {
     args: {},
     staleTime: 300000, // 5 minutes
     refetchOnWindowFocus: true,
@@ -294,7 +294,7 @@ function UserProfile() {
 
 ```typescript
 function DocumentEditor({ docId }) {
-  const { data } = useQuery(api.documents.get, {
+  const { data } = useQuery(client.documents.get, {
     args: { id: docId },
     refetchInterval: 5000, // Check for changes
     refetchOnWindowFocus: true,

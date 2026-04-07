@@ -143,7 +143,7 @@ async function UserList() {
 
 ```typescript
 // app/api/[...slug]/route.ts
-import { createRouteHandler } from "@deessejs/drpc/next"
+import { createRouteHandler } from "@deessejs/drpc-next"
 import { client } from "@/server/api"
 
 export const POST = createRouteHandler(client)

@@ -110,9 +110,9 @@ Keys are defined in `@deessejs/drpc` and consumed by `@deessejs/drpc/react`:
 // In @deessejs/drpc - define keys in the query
 const getUser = t.query({
   args: z.object({ id: z.number() }),
-  handler: async (ctx, args): AsyncOutcome<User> => {
+  handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
-    return success(user, {
+    return ok(user, {
       keys: [["users", { id: args.id }], "users:count"]
     })
   }
@@ -120,9 +120,9 @@ const getUser = t.query({
 
 const listUsers = t.query({
   args: z.object({ limit: z.number() }),
-  handler: async (ctx, args): AsyncOutcome<User[]> => {
+  handler: async (ctx, args) => {
     const users = await ctx.db.users.list(args)
-    return success(users, {
+    return ok(users, {
       keys: [["users", "list", { limit: args.limit }], "users:count"]
     })
   }
@@ -135,9 +135,9 @@ const listUsers = t.query({
 // In @deessejs/drpc - define invalidate in the mutation
 const createUser = t.mutation({
   args: z.object({ name: z.string(), email: z.string() }),
-  handler: async (ctx, args): AsyncOutcome<User> => {
+  handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
-    return success(user, {
+    return ok(user, {
       invalidate: ["users:count", ["users", "list"]]
     })
   }
@@ -145,9 +145,9 @@ const createUser = t.mutation({
 
 const updateUser = t.mutation({
   args: z.object({ id: z.number(), name: z.string() }),
-  handler: async (ctx, args): AsyncOutcome<User> => {
+  handler: async (ctx, args) => {
     const user = await ctx.db.users.update(args.id, { name: args.name })
-    return success(user, {
+    return ok(user, {
       invalidate: [["users", { id: args.id }], "users:count"]
     })
   }
@@ -155,9 +155,9 @@ const updateUser = t.mutation({
 
 const deleteUser = t.mutation({
   args: z.object({ id: z.number() }),
-  handler: async (ctx, args): AsyncOutcome<void> => {
+  handler: async (ctx, args) => {
     await ctx.db.users.delete(args.id)
-    return success(undefined, {
+    return ok(undefined, {
       invalidate: [["users", { id: args.id }], "users:list", "users:count"]
     })
   }
@@ -324,9 +324,9 @@ function UpdateUserForm({ userId }: { userId: number }) {
 ```typescript
 const createUser = t.mutation({
   args: z.object({ name: z.string() }),
-  handler: async (ctx, args): AsyncOutcome<User> => {
+  handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
-    return success(user, {
+    return ok(user, {
       // Invalidate all user-related queries
       invalidate: {
         key: "users",
@@ -342,13 +342,13 @@ const createUser = t.mutation({
 ```typescript
 const updateUser = t.mutation({
   args: z.object({ id: z.number(), role: z.enum(["user", "admin"]) }),
-  handler: async (ctx, args): AsyncOutcome<User> => {
+  handler: async (ctx, args) => {
     const user = await ctx.db.users.update(args.id, { role: args.role })
 
     // Only invalidate admin list if role changed to admin
     const shouldInvalidateAdminList = args.role === "admin"
 
-    return success(user, {
+    return ok(user, {
       invalidate: [
         ["users", { id: args.id }],
         shouldInvalidateAdminList ? "users:admin" : null
@@ -363,11 +363,11 @@ const updateUser = t.mutation({
 ```typescript
 const createOrder = t.mutation({
   args: z.object({ items: z.array(z.object({ productId: z.number(), quantity: z.number() })) }),
-  handler: async (ctx, args): AsyncOutcome<Order> => {
+  handler: async (ctx, args) => {
     const order = await ctx.db.orders.create(args)
 
     // Invalidate all related caches
-    return success(order, {
+    return ok(order, {
       invalidate: [
         "orders",
         ["orders", "list"],

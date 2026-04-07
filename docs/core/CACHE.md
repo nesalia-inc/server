@@ -696,6 +696,10 @@ useUsers() // Automatically refetches
 // The SDK does this automatically:
 import { QueryClient } from "@tanstack/react-query"
 
+const api = createAPI({
+  router: t.router({ ... }),
+})
+
 const queryClient = new QueryClient()
 
 // Intercept API responses

@@ -152,8 +152,8 @@ const updateUser = t.mutation({
   }
 })
   .onSuccess((ctx, args, user) => {
-    // Log successful modification
-    ctx.send("audit.log", {
+    // Log successful modification directly to database
+    ctx.db.auditLogs.create({
       action: "USER_UPDATED",
       userId: user.id,
       modifiedBy: ctx.userId,
@@ -165,8 +165,8 @@ const updateUser = t.mutation({
     })
   })
   .onError((ctx, args, error) => {
-    // Log failed modification attempt
-    ctx.send("audit.log", {
+    // Log failed modification attempt directly to database
+    ctx.db.auditLogs.create({
       action: "USER_UPDATE_FAILED",
       targetUserId: args.id,
       modifiedBy: ctx.userId,
@@ -183,7 +183,7 @@ const getUser = t.query({
   handler: async (ctx, args) => { ... }
 })
   .onSuccess((ctx, args, user) => {
-    ctx.send("audit.log", {
+    ctx.db.auditLogs.create({
       action: "USER_ACCESSED",
       userId: user.id,
       accessedBy: ctx.userId,
@@ -264,7 +264,7 @@ const createUser = t.mutation({
 
 Use the right tool for the right job:
 
-| Aspect | Lifecycle Hooks (`.onSuccess`) | Events (`ctx.send`) |
+| Aspect | Lifecycle Hooks (`.onSuccess`) | External Services |
 |--------|-------------------------------|---------------------|
 | **Coupling** | Tightly coupled to the query/mutation | Loosely coupled, decoupled |
 | **Use Case** | Format response, metrics for this specific query | Notify external systems (email, analytics) |
@@ -279,11 +279,11 @@ const getUser = t.query({ ... })
     user.displayName = user.name.toUpperCase()
   })
 
-// Event: Notify external systems - doesn't know who listens
+// External Service: Notify external systems - doesn't know who listens
 const createUser = t.mutation({ ... })
   .onSuccess((ctx, args, user) => {
-    // I don't know who's listening - just emit
-    ctx.send("user.created", { userId: user.id })
+    // I don't know who's listening - just call the external service
+    ctx.email.sendWelcome(user.id)
   })
 ```
 

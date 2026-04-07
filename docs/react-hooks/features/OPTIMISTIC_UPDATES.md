@@ -46,7 +46,7 @@ import { useMutation, useQueryClient } from "@deessejs/drpc/react"
 function UpdatePostButton({ postId, title }) {
   const queryClient = useQueryClient()
 
-  const { mutate } = useMutation(api.posts.update, {
+  const { mutate } = useMutation(client.posts.update, {
     // Optimistic update configuration
     optimisticUpdate: {
       // Query key to update
@@ -70,7 +70,7 @@ import { useMutation, useQueryClient } from "@deessejs/drpc/react"
 function UpdatePostForm({ postId }) {
   const queryClient = useQueryClient()
 
-  const { mutate } = useMutation(api.posts.update, {
+  const { mutate } = useMutation(client.posts.update, {
     onMutate: async (newData) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['posts'] })
@@ -130,7 +130,7 @@ const updatePost = t.mutation({
 ### Optimistic Delete
 
 ```typescript
-const { mutate } = useMutation(api.posts.delete, {
+const { mutate } = useMutation(client.posts.delete, {
   onMutate: async (deleteData) => {
     await queryClient.cancelQueries({ queryKey: ['posts'] })
 
@@ -153,7 +153,7 @@ const { mutate } = useMutation(api.posts.delete, {
 ### Optimistic Create
 
 ```typescript
-const { mutate } = useMutation(api.posts.create, {
+const { mutate } = useMutation(client.posts.create, {
   onMutate: async (newPost) => {
     await queryClient.cancelQueries({ queryKey: ['posts'] })
 
@@ -188,7 +188,7 @@ const { mutate } = useMutation(api.posts.create, {
 ### Optimistic Toggle
 
 ```typescript
-const { mutate } = useMutation(api.posts.toggle, {
+const { mutate } = useMutation(client.posts.toggle, {
   onMutate: async ({ id, currentStatus }) => {
     await queryClient.cancelQueries({ queryKey: ['posts', id] })
 

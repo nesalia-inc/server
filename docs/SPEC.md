@@ -423,7 +423,7 @@ const getUser = t.query({
   args: z.object({
     id: z.number()
   }),
-  handler: async (ctx, args): AsyncOutcome<User> => success({ id: args.id, name: "John" })
+handler: async (ctx, args) => ok({ id: args.id, name: "John" })
 })
   .beforeInvoke((ctx, args) => {
     console.log(`Fetching user ${args.id}`)
@@ -440,20 +440,20 @@ const getUser = t.query({
 
 ```typescript
 import { z } from "zod"
-import { createCacheStream } from "@deessejs/drpc"
 
-const cacheStream = createCacheStream()
+// Note: createCacheStream is not implemented yet
+// const cacheStream = createCacheStream()
 
 const createUser = t.mutation({
   args: z.object({
     name: z.string()
   }),
-  handler: async (ctx, args): AsyncOutcome<User> => {
+  handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
 
-    cacheStream.invalidate("users.list")
+    // Note: cacheStream.invalidate() is not implemented yet
 
-    return success(user)
+    return ok(user)
   }
 })
 ```

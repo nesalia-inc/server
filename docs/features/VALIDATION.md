@@ -41,7 +41,7 @@ const getUser = t.query({
 
 ```typescript
 import { z } from "zod"
-import { ok } from "@deessejs/core"
+import { ok } from "@deessejs/drpc"
 
 const getUser = t.query({
   args: z.object({

@@ -37,19 +37,19 @@ interface UseQueryOptions {
 
 ```typescript
 // Retry 3 times on failure (default)
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   retry: 3,
 })
 
 // Retry indefinitely
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   retry: true,
 })
 
 // Don't retry
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   retry: false,
 })
@@ -59,7 +59,7 @@ const { data } = useQuery(api.posts.list, {
 
 ```typescript
 // Retry only on network errors
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   retry: (failureCount, error) => {
     // Don't retry on 4xx errors
@@ -72,7 +72,7 @@ const { data } = useQuery(api.posts.list, {
 })
 
 // Retry only on specific errors
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   retry: (failureCount, error) => {
     const retriableCodes = ['ECONNRESET', 'ETIMEDOUT', 'NETWORK_ERROR']
@@ -85,7 +85,7 @@ const { data } = useQuery(api.posts.list, {
 
 ```typescript
 // Exponential backoff: 1s, 2s, 4s, 8s...
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   retry: 3,
   retryDelay: (attemptIndex) => {
@@ -94,14 +94,14 @@ const { data } = useQuery(api.posts.list, {
 })
 
 // Linear backoff: 1s, 2s, 3s...
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   retry: 3,
   retryDelay: (attemptIndex) => attemptIndex * 1000,
 })
 
 // Fixed delay: always 1s
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   retry: 3,
   retryDelay: 1000,
@@ -164,7 +164,7 @@ async function withRetry<T>(
 
 ```typescript
 // Only retry when online
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   networkMode: 'online',
 })
@@ -174,7 +174,7 @@ const { data } = useQuery(api.posts.list, {
 
 ```typescript
 // Queue mutations and retry regardless of network status
-const { mutate } = useMutation(api.posts.create, {
+const { mutate } = useMutation(client.posts.create, {
   networkMode: 'always',
 })
 ```
@@ -183,7 +183,7 @@ const { mutate } = useMutation(api.posts.create, {
 
 ```typescript
 // Try from cache first, then fetch
-const { data } = useQuery(api.posts.list, {
+const { data } = useQuery(client.posts.list, {
   args: {},
   networkMode: 'offlineFirst',
   staleTime: Infinity, // Cache is always fresh
@@ -193,7 +193,7 @@ const { data } = useQuery(api.posts.list, {
 ## Mutation Retry
 
 ```typescript
-const { mutate } = useMutation(api.posts.create, {
+const { mutate } = useMutation(client.posts.create, {
   retry: 3,
   retryDelay: 1000,
 
@@ -203,7 +203,7 @@ const { mutate } = useMutation(api.posts.create, {
 })
 
 // Manual retry
-const { mutate, retry } = useMutation(api.posts.create)
+const { mutate, retry } = useMutation(client.posts.create)
 
 const handleSubmit = async () => {
   try {
@@ -221,14 +221,14 @@ const handleSubmit = async () => {
 
 ```typescript
 // Critical - retry more aggressively
-const { data: user } = useQuery(api.user.profile, {
+const { data: user } = useQuery(client.user.profile, {
   args: {},
   retry: 5,
   retryDelay: (attempt) => Math.min(500 * attempt, 5000),
 })
 
 // Non-critical - retry less
-const { data: recommendations } = useQuery(api.recommendations, {
+const { data: recommendations } = useQuery(client.recommendations, {
   args: {},
   retry: 1,
 })
@@ -238,7 +238,7 @@ const { data: recommendations } = useQuery(api.recommendations, {
 
 ```typescript
 function RetryButton() {
-  const { data, error, refetch, isFetching } = useQuery(api.posts.list, {
+  const { data, error, refetch, isFetching } = useQuery(client.posts.list, {
     args: {},
     retry: 3,
   })
@@ -264,7 +264,7 @@ function RetryButton() {
 function ProgressRetries() {
   const [retryCount, setRetryCount] = useState(0)
 
-  const { data, error } = useQuery(api.posts.list, {
+  const { data, error } = useQuery(client.posts.list, {
     args: {},
     retry: 3,
     retryDelay: 2000,
