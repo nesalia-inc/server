@@ -16,7 +16,7 @@ t.internalQuery()    // Private read operations
 t.internalMutation() // Private write operations
 t.router()          // Hierarchical routing
 t.middleware()      // Middleware
-t.on()              // Event listeners
+t.on()              // Register event listeners
 ```
 
 ---
@@ -260,24 +260,26 @@ const api = createAPI({
 
 ## `t.on(event, handler)`
 
-Registers a global event listener.
+Registers a global event listener. Listeners are called when events are emitted via `ctx.send()`.
 
 ### Signature
 
 ```typescript
 t.on<EventName extends string, EventData>(
   event: EventName,
-  handler: EventHandler<Ctx, unknown, EventData>
+  handler: (ctx: Ctx, event: { name: string; data: EventData }) => void | Promise<void>
 ): void
 ```
 
 ### Example
 
 ```typescript
-t.on("user.created", async (ctx, args, event) => {
+// Register a listener for user.created events
+t.on("user.created", async (ctx, event) => {
   await ctx.db.notifications.create({
     type: "welcome",
     userId: event.data.id,
+    email: event.data.email,
   })
 })
 ```
