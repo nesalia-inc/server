@@ -81,8 +81,6 @@ type EventListener<Ctx = any, Args = unknown, EventData = unknown> = {
 }
 
 export function defineEvents<Events extends EventRegistry>(schema: Events) {
-  type EventName = string
-
   const events: Events = schema
 
   // Global event listeners registry

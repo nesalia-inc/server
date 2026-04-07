@@ -1,7 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import {
   defineContext,
-  createAPI,
   createPublicAPI,
   createClient,
   createLocalExecutor,
@@ -377,7 +376,7 @@ describe("t.middleware()", () => {
     const timingMiddleware = t.middleware({
       name: "timing",
       handler: async (ctx, next) => {
-        const start = Date.now()
+        const _start = Date.now()
         const result = await next()
         return result
       },
@@ -460,7 +459,7 @@ describe("createAPI()", () => {
       plugins: [
         plugin({
           name: "test-plugin",
-          extend: (ctx) => ({ pluginData: "data" } as any),
+          extend: (_ctx) => ({ pluginData: "data" } as any),
         }),
       ],
     })
@@ -764,7 +763,7 @@ describe("Middleware Chain Execution", () => {
 
     const authMiddleware = t.middleware({
       name: "auth",
-      handler: async (ctx, next) => {
+      handler: async (_ctx, _next) => {
         return err({ code: "UNAUTHORIZED", message: "Not authorized" })
       },
     })
@@ -863,7 +862,7 @@ describe("Plugin System", () => {
     })
 
     it("should create a plugin with router", () => {
-      const { t } = defineContext<TestContext>({
+      const { t: _t } = defineContext<TestContext>({
         context: { db: { users: [], query: async () => [] }, requestId: "" },
       })
 
