@@ -1,13 +1,12 @@
-# Queries Guide
+# Public Queries
+
+Public queries (`t.query()`) are exposed via HTTP and can be called from both client and server-side code.
 
 ## Overview
 
-Queries are read operations in `@deessejs/drpc`. They are used to fetch data from your data sources. Queries can be either:
+Public queries are the standard way to define read operations that need to be accessible from web clients, mobile apps, or any external consumers. They are automatically routed via HTTP and can be called using the client SDK or direct HTTP requests.
 
-- **Public** (`t.query()`) - Exposed via HTTP, callable from client and server
-- **Internal** (`t.internalQuery()`) - Only callable from server-side code
-
-## Basic Query Definition
+## Basic Definition
 
 ```typescript
 import { defineContext } from "@deessejs/drpc"
@@ -19,12 +18,10 @@ const { t } = defineContext({
 })
 
 const getUser = t.query({
-  // Args validation with Zod
   args: z.object({
     id: z.number()
   }),
 
-  // Handler receives context and args
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
 
@@ -37,44 +34,108 @@ const getUser = t.query({
 })
 ```
 
-## Query Structure
+## Security Model
 
-### Args
+Public queries are exposed to the internet. Consider:
 
-Args are validated using your preferred validator (Zod, Valibot, ArkType, etc.). The schema defines what arguments the query accepts:
+- **Authentication**: Verify the user is logged in
+- **Authorization**: Check if the user has permission to access the data
+- **Input Validation**: Always validate and sanitize input
+- **Rate Limiting**: Consider implementing rate limits for expensive operations
 
 ```typescript
-import { z } from "zod"
+const getUser = t.query({
+  args: z.object({
+    id: z.number()
+  }),
 
+  handler: async (ctx, args) => {
+    // Check authentication
+    if (!ctx.userId) {
+      return err({ code: "UNAUTHORIZED", message: "Please log in" })
+    }
+
+    const user = await ctx.db.users.find(args.id)
+
+    // Check authorization - users can only view their own profile
+    if (user.id !== ctx.userId && ctx.role !== "admin") {
+      return err({ code: "FORBIDDEN", message: "Access denied" })
+    }
+
+    return ok(user)
+  }
+})
+```
+
+## API Reference
+
+### `t.query(options)`
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `args` | Standard Schema | No | Validation schema for arguments |
+| `handler` | Function | Yes | Async function receiving `(ctx, args)` |
+
+### Args Validation
+
+Args are validated using your preferred validator (Zod, Valibot, ArkType, etc.):
+
+```typescript
 // Simple args
-const idSchema = z.object({
-  id: z.number()
+const getUser = t.query({
+  args: z.object({
+    id: z.number()
+  }),
+  handler: async (ctx, args) => { /* ... */ }
 })
 
 // Multiple args
-const listArgsSchema = z.object({
-  search: z.string().optional(),
-  limit: z.number().default(10),
-  offset: z.number().default(0)
+const listUsers = t.query({
+  args: z.object({
+    search: z.string().optional(),
+    limit: z.number().default(10),
+    offset: z.number().default(0)
+  }),
+  handler: async (ctx, args) => { /* ... */ }
 })
 
 // No args - can be omitted entirely
-// args is optional
+const getStats = t.query({
+  handler: async (ctx) => { /* ... */ }
+})
 ```
 
-> **Note:** Use your preferred validator like Zod, Valibot, or ArkType. The framework automatically detects and works with Standard Schema compatible libraries.
+> **Note:** The framework automatically detects and works with Standard Schema compatible libraries.
 
 ### Handler
 
-The handler is an async function that receives:
+The handler receives:
 
-- **`ctx`** - The context object with all your services (db, logger, cache, etc.)
-- **`args`** - The validated arguments (inferred from your Standard Schema)
-
-The handler can return either a `Result` or a plain value:
+- **`ctx`** - The context object with all your services
+- **`args`** - The validated arguments (inferred from your schema)
 
 ```typescript
-// With Result (recommended for explicit error handling)
+handler: async (ctx, args) => {
+  // ctx.db - database access
+  // ctx.userId - authenticated user ID
+  // ctx.role - user role
+
+  const user = await ctx.db.users.find(args.id)
+  return ok(user)
+}
+```
+
+### Return Types
+
+Handlers can return values directly or use the Result pattern:
+
+```typescript
+// Direct return
+handler: async (ctx, args) => {
+  return await ctx.db.users.find(args.id)
+}
+
+// With explicit error handling (recommended)
 handler: async (ctx, args) => {
   const user = await ctx.db.users.find(args.id)
   if (!user) {
@@ -83,12 +144,7 @@ handler: async (ctx, args) => {
   return ok(user)
 }
 
-// Without Result (returns value directly)
-handler: async (ctx, args) => {
-  return await ctx.db.users.find(args.id)
-}
-
-// Can also throw errors
+// By throwing errors
 handler: async (ctx, args) => {
   const user = await ctx.db.users.find(args.id)
   if (!user) {
@@ -98,81 +154,11 @@ handler: async (ctx, args) => {
 }
 ```
 
-## Return Value Options
+## Lifecycle Hooks
 
-### Basic Result
-
-```typescript
-handler: async (ctx, args) => {
-  return ok({ id: 1, name: "John" })
-}
-```
-
-### With Cache Keys
-
-Queries can return cache keys to enable automatic cache invalidation:
+Public queries support middleware hooks for logging, metrics, and more:
 
 ```typescript
-import { withMetadata } from "@deessejs/drpc"
-
-handler: async (ctx, args) => {
-  const user = await ctx.db.users.find(args.id)
-
-  return withMetadata(user, {
-    // Cache keys - used for invalidation
-    keys: [
-      ["users", "list"],                    // Invalidate all user lists
-      ["users", { id: args.id }],          // Invalidate specific user
-      ["users", { id: args.id, "details" }] // Invalidate user details
-    ]
-  })
-}
-```
-
-### With TTL
-
-You can specify a time-to-live for cached results:
-
-```typescript
-handler: async (ctx, args) => {
-  const settings = await ctx.db.settings.find()
-
-  return withMetadata(settings, {
-    keys: ["settings"],
-    ttl: 60000 // 1 minute cache
-  })
-}
-```
-
-## Internal Queries
-
-Internal queries are not exposed via HTTP. They can only be called from server-side code:
-
-```typescript
-// Internal query - not exposed via HTTP
-const getAdminStats = t.internalQuery({
-  // No args needed - omit entirely
-  handler: async (ctx) => {
-    // This runs only on server - safe from HTTP attacks
-    return ok({
-      totalUsers: await ctx.db.users.count(),
-      revenue: await ctx.db.orders.sum(),
-      pendingTasks: await ctx.db.tasks.count({ status: "pending" })
-    })
-  }
-})
-```
-
-## Query Options
-
-### Middleware
-
-Queries support lifecycle hooks:
-
-```typescript
-import { z } from "zod"
-import { withMetadata } from "@deessejs/drpc"
-
 const getUser = t.query({
   args: z.object({
     id: z.number()
@@ -195,7 +181,48 @@ const getUser = t.query({
   })
 ```
 
-## Using Queries
+### Available Hooks
+
+| Hook | Parameters | Description |
+|------|------------|-------------|
+| `beforeInvoke` | `(ctx, args)` | Called before the handler runs |
+| `onSuccess` | `(ctx, args, data)` | Called after successful execution |
+| `onError` | `(ctx, args, error)` | Called when handler throws or returns error |
+
+## Cache Metadata
+
+Return cache keys to enable automatic cache invalidation:
+
+```typescript
+import { withMetadata } from "@deessejs/drpc"
+
+handler: async (ctx, args) => {
+  const user = await ctx.db.users.find(args.id)
+
+  return withMetadata(user, {
+    keys: [
+      ["users", "list"],                    // Invalidate all user lists
+      ["users", { id: args.id }],          // Invalidate specific user
+      ["users", { id: args.id, "details" }] // Invalidate user details
+    ]
+  })
+}
+```
+
+### With TTL
+
+```typescript
+handler: async (ctx, args) => {
+  const settings = await ctx.db.settings.find()
+
+  return withMetadata(settings, {
+    keys: ["settings"],
+    ttl: 60000 // 1 minute cache
+  })
+}
+```
+
+## Usage Examples
 
 ### From Server Components
 
@@ -379,7 +406,6 @@ const getUserWithPosts = t.query({
 
 ```typescript
 const getConfig = t.query({
-  // No args needed - omit entirely
   handler: async (ctx) => {
     // Check cache first
     const cached = await ctx.cache.get("app:config")
@@ -398,96 +424,18 @@ const getConfig = t.query({
 })
 ```
 
-## Error Handling
-
-### With Result Type
-
-```typescript
-handler: async (ctx, args) => {
-  const user = await ctx.db.users.find(args.id)
-
-  if (!user) {
-    return err({
-      code: "NOT_FOUND",
-      message: "User not found",
-      details: { userId: args.id }
-    })
-  }
-
-  if (!user.active) {
-    return err({
-      code: "INACTIVE_USER",
-      message: "User account is inactive"
-    })
-  }
-
-  return ok(user)
-}
-```
-
-### Error Types
-
-```typescript
-// Define error types
-type NotFoundError = {
-  code: "NOT_FOUND"
-  message: string
-  resource: string
-}
-
-type PermissionError = {
-  code: "PERMISSION_DENIED"
-  message: string
-  requiredRole: string
-}
-
-type NotFoundError | PermissionError
-
-handler: async (ctx, args) => {
-  const user = await ctx.db.users.find(args.id)
-
-  if (!user) {
-    return err({
-      code: "NOT_FOUND",
-      message: "User not found",
-      resource: "user"
-    })
-  }
-
-  if (ctx.userId !== user.id && ctx.role !== "admin") {
-    return err({
-      code: "PERMISSION_DENIED",
-      message: "You don't have permission",
-      requiredRole: "admin"
-    })
-  }
-
-  return ok(user)
-}
-```
-
 ## Best Practices
 
-1. **Use your preferred validator for args validation** - Use Zod, Valibot, or any Standard Schema compatible library
-
-2. **Return Result for explicit errors** - Makes error handling explicit
-
-3. **Use cache keys** - Enables automatic cache invalidation on mutations
-
+1. **Always validate input** - Use Zod or another Standard Schema compatible library
+2. **Return Result for explicit errors** - Makes error handling explicit and type-safe
+3. **Use cache keys** - Enables automatic cache invalidation when data changes
 4. **Keep handlers focused** - Each query should do one thing
-
-5. **Use internal queries for sensitive data** - Don't expose admin operations via HTTP
-
-6. **Add TTL for rarely changing data** - Reduces database load
-
-7. **Use pagination** - Always limit results for list queries
+5. **Add TTL for rarely changing data** - Reduces database load
+6. **Use pagination** - Always limit results for list queries
+7. **Implement proper auth checks** - Verify user identity and permissions
 
 ```typescript
-import { err } from "@deessejs/core"
-import { withMetadata } from "@deessejs/drpc"
-import { z } from "zod"
-
-// Good: Explicit error handling with cache keys
+// Good example
 const getUser = t.query({
   args: z.object({
     id: z.number()
@@ -500,23 +448,10 @@ const getUser = t.query({
     return withMetadata(user, { keys: ["users", { id: args.id }] })
   }
 })
-
-// Good: Pagination with cache keys
-const listUsers = t.query({
-  args: z.object({
-    page: z.number().default(1),
-    limit: z.number().default(10)
-  }),
-  handler: async (ctx, args) => {
-    // ... implementation
-    return withMetadata({ items, total }, {
-      keys: ["users", "list", { page: args.page }]
-    })
-  }
-})
 ```
 
 ## Related
 
-- [Cache](CACHE.md) - Cache system with keys and invalidation
-- [Context](../SPEC.md#defineContext) - Context definition
+- [Mutations](MUTATIONS.md) - Write operations (public)
+- [Internal](INTERNAL.md) - Internal queries and mutations (server-only)
+- [Cache](../CACHE.md) - Cache system with keys and invalidation
