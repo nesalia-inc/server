@@ -177,14 +177,20 @@ const api = createAPI({
 The handler can return a `Result` (with `ok`/`err`), but for queries that return cache metadata, use `withMetadata`.
 
 ```typescript
+import * as StandardSchema from "standard-schema"
 import { ok, err } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
 import { keys } from "./cache/keys"
 
 const getUser = t.query({
-  args: z.object({
-    id: z.number()
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
 
@@ -198,7 +204,14 @@ const getUser = t.query({
 
 // Handler can also return plain ok() (Result is optional)
 const getUserSimple = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     return ok(await ctx.db.users.find(args.id))
   }
@@ -224,15 +237,21 @@ const getAdminStats = t.internalQuery({
 ### Define Mutation
 
 ```typescript
+import * as StandardSchema from "standard-schema"
 import { ok, err } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
 import { keys } from "./cache/keys"
 
 const createUser = t.mutation({
-  args: z.object({
-    name: z.string().min(2),
-    email: z.string().email(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string", minLength: 2 },
+      email: { type: "string", format: "email" }
+    },
+    required: ["name", "email"]
+  },
   handler: async (ctx, args) => {
     const existing = await ctx.db.users.findByEmail(args.email)
     if (existing) {
@@ -413,8 +432,17 @@ Content-Type: application/json
 ### Lifecycle Hooks
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args): AsyncOutcome<User> => success({ id: args.id, name: "John" })
 })
   .beforeInvoke((ctx, args) => {
@@ -431,12 +459,20 @@ const getUser = t.query({
 ### Cache Invalidation
 
 ```typescript
+import * as StandardSchema from "standard-schema"
 import { createCacheStream } from "@deessejs/drpc"
 
 const cacheStream = createCacheStream()
 
 const createUser = t.mutation({
-  args: z.object({ name: z.string() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string" }
+    },
+    required: ["name"]
+  },
   handler: async (ctx, args): AsyncOutcome<User> => {
     const user = await ctx.db.users.create(args)
 

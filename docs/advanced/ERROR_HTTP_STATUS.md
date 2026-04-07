@@ -43,8 +43,17 @@ Content-Type: application/json
 ### Basic Error Mapping
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
 
@@ -70,7 +79,15 @@ Content-Type: application/json
 
 ```typescript
 const login = t.mutation({
-  args: z.object({ email: z.string(), password: z.string() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      email: { type: "string" },
+      password: { type: "string" }
+    },
+    required: ["email", "password"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.authenticate(args.email, args.password)
 
@@ -96,7 +113,14 @@ Content-Type: application/json
 
 ```typescript
 const deleteUser = t.mutation({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     if (!ctx.isAdmin) {
       return err({ code: "FORBIDDEN", message: "Admin access required" })
@@ -210,8 +234,17 @@ return err(errors.NOT_FOUND)
 When a handler throws an exception:
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     // This throws!
     throw new Error("Database connection failed")

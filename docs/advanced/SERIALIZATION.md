@@ -91,8 +91,17 @@ return ok({ user: new User("John") })
 ### In Query Results
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)  // Automatically serialized
@@ -104,7 +113,14 @@ const getUser = t.query({
 
 ```typescript
 const createUser = t.mutation({
-  args: z.object({ name: z.string() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string" }
+    },
+    required: ["name"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create({
       ...args,
@@ -161,7 +177,14 @@ Types are automatically inferred:
 
 ```typescript
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     return ok({
       id: 1,
@@ -182,20 +205,33 @@ type User = InferResult<typeof getUser>
 // }
 ```
 
-### Zod Integration
+### Standard Schema Integration
 
-Use `z.date()` in schemas:
+Use Standard Schema for type inference:
 
 ```typescript
-const userSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  createdAt: z.date(),  // TypeScript knows it's Date
-  bigInt: z.bigint()
-})
+import * as StandardSchema from "standard-schema"
+
+const userSchema = {
+  [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  properties: {
+    id: { type: "number" },
+    name: { type: "string" },
+    createdAt: { type: "string" },  // Standard Schema doesn't preserve Date natively
+    bigInt: { type: "string" }  // BigInt as string
+  }
+}
 
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)

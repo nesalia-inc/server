@@ -8,11 +8,17 @@ Complete examples for common CRUD operations using the magic wrapper.
 
 ```typescript
 // server/api/users.ts
+import * as StandardSchema from "standard-schema"
+
 const getUsers = t.query({
-  args: z.object({
-    page: z.number().default(1),
-    limit: z.number().default(10),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      page: { type: "number", default: 1 },
+      limit: { type: "number", default: 10 }
+    }
+  },
   handler: async (ctx, args) => {
     const users = await ctx.db.users.findMany({
       skip: (args.page - 1) * args.limit,
@@ -27,7 +33,14 @@ const getUsers = t.query({
 })
 
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.findUnique({ where: { id: args.id } })
     if (!user) return err({ code: "NOT_FOUND", message: "User not found" })
@@ -39,10 +52,15 @@ const getUser = t.query({
 })
 
 const createUser = t.mutation({
-  args: z.object({
-    name: z.string().min(2),
-    email: z.string().email(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string", minLength: 2 },
+      email: { type: "string", format: "email" }
+    },
+    required: ["name", "email"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return ok(user, {
@@ -52,11 +70,16 @@ const createUser = t.mutation({
 })
 
 const updateUser = t.mutation({
-  args: z.object({
-    id: z.number(),
-    name: z.string().optional(),
-    email: z.string().email().optional(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" },
+      name: { type: "string" },
+      email: { type: "string", format: "email" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.update({
       where: { id: args.id },
@@ -72,7 +95,14 @@ const updateUser = t.mutation({
 })
 
 const deleteUser = t.mutation({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     await ctx.db.users.delete({ where: { id: args.id } })
     return ok({ success: true }, {
@@ -211,11 +241,17 @@ export function DeleteUserButton({ userId }: { userId: number }) {
 
 ```typescript
 // server/api/posts.ts
+import * as StandardSchema from "standard-schema"
+
 const listPosts = t.query({
-  args: z.object({
-    status: z.enum(["draft", "published"]).optional(),
-    limit: z.number().default(10),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      status: { type: "string", enum: ["draft", "published"] },
+      limit: { type: "number", default: 10 }
+    }
+  },
   handler: async (ctx, args) => {
     const posts = await ctx.db.posts.findMany({
       where: args.status ? { status: args.status } : undefined,
@@ -230,7 +266,14 @@ const listPosts = t.query({
 })
 
 const getPost = t.query({
-  args: z.object({ slug: z.string() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      slug: { type: "string" }
+    },
+    required: ["slug"]
+  },
   handler: async (ctx, args) => {
     const post = await ctx.db.posts.findUnique({
       where: { slug: args.slug }
@@ -244,11 +287,16 @@ const getPost = t.query({
 })
 
 const createPost = t.mutation({
-  args: z.object({
-    title: z.string(),
-    content: z.string(),
-    status: z.enum(["draft", "published"]).default("draft"),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      content: { type: "string" },
+      status: { type: "string", enum: ["draft", "published"], default: "draft" }
+    },
+    required: ["title", "content"]
+  },
   handler: async (ctx, args) => {
     const post = await ctx.db.posts.create({
       data: {
@@ -263,7 +311,14 @@ const createPost = t.mutation({
 })
 
 const publishPost = t.mutation({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const post = await ctx.db.posts.update({
       where: { id: args.id },

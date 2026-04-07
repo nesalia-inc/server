@@ -16,8 +16,17 @@ The server declares what changes, DeesseJS SDK applies automatically.
 
 ```typescript
 // server/api.ts
+import * as StandardSchema from "standard-schema"
+
 const toggleLike = t.mutation({
-  args: z.object({ postId: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      postId: { type: "number" }
+    },
+    required: ["postId"]
+  },
   handler: async (ctx, args) => {
     const existing = await ctx.db.likes.findUnique({
       where: { postId_userId: { postId: args.postId, userId: ctx.userId }}

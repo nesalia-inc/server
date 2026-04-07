@@ -423,8 +423,17 @@ plugins: [
 ### Using Extended Context
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     // Access base context
     const user = await ctx.db.users.find(args.id)

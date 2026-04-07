@@ -73,7 +73,8 @@ export const POST = createRouteHandler(drpc)
 ```typescript
 // server/drpc.ts
 import { defineContext, createAPI, createPublicAPI } from "@deessejs/drpc"
-import { z } from "zod"
+import { ok, err } from "@deessejs/core"
+import * as StandardSchema from "standard-schema"
 
 const { t, createAPI } = defineContext({
   context: { db: myDatabase },
@@ -81,7 +82,14 @@ const { t, createAPI } = defineContext({
 
 // Public operations (exposed via HTTP)
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     if (!user) return err({ code: "NOT_FOUND", message: "User not found" })
@@ -90,7 +98,15 @@ const getUser = t.query({
 })
 
 const createUser = t.mutation({
-  args: z.object({ name: z.string(), email: z.string().email() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string", minLength: 2 },
+      email: { type: "string", format: "email" }
+    },
+    required: ["name", "email"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return ok(user)
@@ -99,7 +115,14 @@ const createUser = t.mutation({
 
 // Internal operations (server-only)
 const deleteUser = t.internalMutation({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     await ctx.db.users.delete(args.id)
     return ok({ success: true })
@@ -258,7 +281,15 @@ When using `@deessejs/drpc/react`, mutations automatically invalidate related qu
 ```typescript
 // Mutations return invalidation keys
 const createUser = t.mutation({
-  args: z.object({ name: z.string(), email: z.string().email() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string", minLength: 2 },
+      email: { type: "string", format: "email" }
+    },
+    required: ["name", "email"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return ok(user)

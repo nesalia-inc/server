@@ -207,9 +207,18 @@ type Query<Ctx, Args, Output> = {
   on(event: "onError", handler: (ctx: Ctx, args: Args, error: unknown) => void | Promise<void>): Query<Ctx, Args, Output>
 }
 
+import * as StandardSchema from "standard-schema"
+
 // Usage
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => { ... }
 })
   .on("beforeInvoke", (ctx, args) => { console.log("Fetching user", args.id) })
@@ -222,11 +231,18 @@ const getUser = t.query({
 ### Basic Event Emission
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const createUser = t.mutation({
-  args: z.object({
-    name: z.string(),
-    email: z.string().email(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      email: { type: "string", format: "email" }
+    },
+    required: ["name", "email"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
 
@@ -365,12 +381,19 @@ This reinforces:
 - **Clarity:** `api.notifications.sent` in code = `notifications.sent` in listeners
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const scheduledNotification = t.mutation({
-  args: z.object({
-    userId: z.number(),
-    message: z.string(),
-    sendAt: z.string().datetime(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      userId: { type: "number" },
+      message: { type: "string" },
+      sendAt: { type: "string" }
+    },
+    required: ["userId", "message", "sendAt"]
+  },
   handler: async (ctx, args): AsyncOutcome<void> => {
     const delay = new Date(args.sendAt).getTime() - Date.now()
 
@@ -387,8 +410,18 @@ const scheduledNotification = t.mutation({
 ### Broadcasting Events
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const configUpdated = t.mutation({
-  args: z.object({ key: z.string(), value: z.unknown() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      key: { type: "string" },
+      value: {}
+    },
+    required: ["key", "value"]
+  },
   handler: async (ctx, args): AsyncOutcome<void> => {
     await ctx.db.config.set(args.key, args.value)
 

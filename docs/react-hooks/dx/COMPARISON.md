@@ -178,11 +178,18 @@ export function EditUserButton({ userId }: { userId: number }) {
 
 ```typescript
 // server/api.ts
+import * as StandardSchema from "standard-schema"
+
 const updateUser = t.mutation({
-  args: z.object({
-    id: z.number(),
-    name: z.string().optional(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" },
+      name: { type: "string" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.update({
       where: { id: args.id },

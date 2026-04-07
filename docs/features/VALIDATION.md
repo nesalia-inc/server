@@ -14,9 +14,16 @@ const { t, createAPI } = defineContext({
   context: { db: myDatabase }
 })
 
-// Works with Zod, Valibot, ArkType, Typia - any of them!
+// Works with Zod, Valibot, ArkType, Typia - any of them via @standard-schema adapters!
 const getUser = t.query({
-  args: z.object({ id: z.number() }),  // Zod
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => { ... }
 })
 ```
@@ -91,15 +98,38 @@ const getPost = t.query({
 
 ## Usage Examples
 
-### With Zod
+### With Standard Schema (Native JSON Schema)
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
+const getUser = t.query({
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.users.find(args.id)
+    return ok(user)
+  }
+})
+```
+
+### With Zod (via @standard-schema/zod)
+
+```typescript
+import * as StandardSchema from "standard-schema"
+import { createSchema } from "@standard-schema/zod"
 import { z } from "zod"
 
 const getUser = t.query({
-  args: z.object({
+  args: createSchema(z.object({
     id: z.number()
-  }),
+  })),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)
@@ -110,13 +140,15 @@ const getUser = t.query({
 ### With Valibot
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+import { createSchema } from "@standard-schema/valibot"
 import { v } from "valibot"
 
 const getUser = t.query({
-  args: v.object({
+  args: createSchema(v.object({
     id: v.number(),
     include: v.optional(v.string())
-  }),
+  })),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)
@@ -127,13 +159,15 @@ const getUser = t.query({
 ### With ArkType
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+import { createSchema } from "@standard-schema/arktype"
 import { type } from "arktype"
 
 const getUser = t.query({
-  args: type({
+  args: createSchema(type({
     id: "number",
     include: "string?"
-  }),
+  })),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)
@@ -186,13 +220,18 @@ Types are automatically inferred from schemas - no manual configuration needed:
 
 ```typescript
 import { InferArgs, InferOutput } from "@deessejs/drpc"
-import { z } from "zod"
+import * as StandardSchema from "standard-schema"
 
 const createUser = t.mutation({
-  args: z.object({
-    name: z.string(),
-    email: z.string().email()
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string", minLength: 2 },
+      email: { type: "string", format: "email" }
+    },
+    required: ["name", "email"]
+  },
   handler: async (ctx, args) => {
     // args is automatically typed!
     // { name: string; email: string }
@@ -217,17 +256,30 @@ export type InferOutput<T> = StandardSchemaV1.InferOutput<T>
 
 ## Partial Validation
 
-Since `@deessejs` is validator-agnostic, schema manipulation (like `.partial()` or `.omit()`) should be done using your validator's native API:
+Since `@deessejs` is validator-agnostic, schema manipulation (like partial or omit) should be done using your validator's native API. With Standard Schema, use JSON Schema composition:
 
 ```typescript
-// Zod - use .partial()
-const updateUserSchema = userSchema.partial()
+// Standard Schema - use JSON Schema composition
+const updateUserSchema = {
+  [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+  type: "object",
+  properties: {
+    id: { type: "number" },
+    name: { type: "string" },
+    email: { type: "string", format: "email" }
+  },
+  required: ["id"]
+}
 
-// Valibot - use v.partial()
-const updateUserSchema = v.partial(userSchema)
-
-// ArkType - use partial()
-const updateUserSchema = type(userSchema).partial()
+// Or with @standard-schema/zod for Zod-style .partial()
+const { createSchema } from "@standard-schema/zod"
+import { z } from "zod"
+const userSchema = z.object({
+  id: z.number(),
+  name: z.string().min(2),
+  email: z.string().email()
+})
+const updateUserSchema = createSchema(userSchema.partial())
 
 // Then use in mutation
 const updateUser = t.mutation({

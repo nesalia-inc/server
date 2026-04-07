@@ -77,8 +77,17 @@ All hooks return:
 ### Basic Hooks
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     if (!user) {
@@ -104,11 +113,18 @@ const getUser = t.query({
 ### Logging
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const createUser = t.mutation({
-  args: z.object({
-    name: z.string(),
-    email: z.string().email(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      email: { type: "string", format: "email" }
+    },
+    required: ["name", "email"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return ok(user)
@@ -129,12 +145,19 @@ const createUser = t.mutation({
 
 ```typescript
 // Track all user modifications
+import * as StandardSchema from "standard-schema"
+
 const updateUser = t.mutation({
-  args: z.object({
-    id: z.number(),
-    name: z.string().optional(),
-    email: z.string().email().optional(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" },
+      name: { type: "string" },
+      email: { type: "string", format: "email" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.update(args.id, {
       ...(args.name && { name: args.name }),
@@ -168,8 +191,17 @@ const updateUser = t.mutation({
   })
 
 // Track data access
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => { ... }
 })
   .onSuccess((ctx, args, user) => {
@@ -185,8 +217,17 @@ const getUser = t.query({
 ### Metrics Collection
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     if (!user) {
@@ -222,11 +263,18 @@ const getUser = t.query({
 
 ```typescript
 // Invalidate cache after mutations
+import * as StandardSchema from "standard-schema"
+
 const updateUser = t.mutation({
-  args: z.object({
-    id: z.number(),
-    name: z.string(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" },
+      name: { type: "string" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.update(args.id, { name: args.name })
     return ok(user)
@@ -241,10 +289,15 @@ const updateUser = t.mutation({
 
 // Refresh cache after mutations
 const createTask = t.mutation({
-  args: z.object({
-    title: z.string(),
-    userId: z.number(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      userId: { type: "number" }
+    },
+    required: ["title", "userId"]
+  },
   handler: async (ctx, args) => {
     const task = await ctx.db.tasks.create(args)
     return ok(task)
@@ -260,11 +313,18 @@ const createTask = t.mutation({
 ### Response Transformation
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const createUser = t.mutation({
-  args: z.object({
-    name: z.string(),
-    email: z.string().email(),
-  }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      email: { type: "string", format: "email" }
+    },
+    required: ["name", "email"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return ok(user)
@@ -312,8 +372,17 @@ const createUser = t.mutation({ ... })
 ### Conditional Execution
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => { ... }
 })
   .beforeInvoke((ctx, args) => {
@@ -335,8 +404,17 @@ const getUser = t.query({
 Multiple hooks of the same type can be chained:
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   handler: async (ctx, args) => { ... }
 })
   // Multiple beforeInvoke - all run in order
@@ -363,6 +441,11 @@ Middleware and lifecycle hooks can be used together. Middleware runs first, then
 // Middleware runs first (wraps the entire operation)
 const authMiddleware = t.middleware({
   name: "auth",
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {},
+  },
   handler: async (ctx, next) => {
     ctx.userId = Number(ctx.headers.get("x-user-id"))
     return next()
@@ -371,7 +454,14 @@ const authMiddleware = t.middleware({
 
 // Then lifecycle hooks
 const getUser = t.query({
-  args: z.object({ id: z.number() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      id: { type: "number" }
+    },
+    required: ["id"]
+  },
   middleware: authMiddleware,
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
@@ -499,8 +589,17 @@ describe("API with Lifecycle Hooks", () => {
 Hooks should not break the main flow. The framework wraps hook execution in try/catch:
 
 ```typescript
+import * as StandardSchema from "standard-schema"
+
 const createUser = t.mutation({
-  args: z.object({ name: z.string() }),
+  args: {
+    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
+    type: "object",
+    properties: {
+      name: { type: "string" }
+    },
+    required: ["name"]
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return ok(user)
