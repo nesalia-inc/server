@@ -33,8 +33,10 @@
     "vitest": "^2.1.0",
     "zod": "^3.0.0"
   },
+  "dependencies": {
+    "@deessejs/core": "^1.0.0"
+  },
   "peerDependencies": {
-    "@deessejs/core": "workspace:*",
     "zod": "^3.0.0"
   }
 }

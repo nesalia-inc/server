@@ -6,15 +6,6 @@ settings:
 
 importers:
 
-  package/core:
-    devDependencies:
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9
-
   package/drpc-next:
     dependencies:
       '@deessejs/drpc':
@@ -24,8 +15,8 @@ importers:
   package/server:
     dependencies:
       '@deessejs/core':
-        specifier: workspace:*
-        version: 2.0.0
+        specifier: ^1.0.0
+        version: 1.0.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.17.0
@@ -72,8 +63,8 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
-  '@deessejs/core@2.0.0':
-    resolution: {integrity: sha512-d/SNpGizStjXRdUEoNBaMLvRGR6erJoispS5NQUgEHqWhCIPU6yiyOZ9qbnGw98SlfcdnDjxIlvoIP1PjH2XbA==}
+  '@deessejs/core@1.0.0':
+    resolution: {integrity: sha512-YyKyRdhh8tWlxdCcOM2R3io+TTjkTt2LQJQ0wzDNk4bGfgP4TKOMQC6s4oltjEH3boUGJ2LGaShziWA+8vDOSw==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -1112,7 +1103,7 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@deessejs/core@2.0.0':
+  '@deessejs/core@1.0.0':
     dependencies:
       zod: 4.3.6
 
