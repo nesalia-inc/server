@@ -22,7 +22,7 @@ Middleware is a function that wraps a handler execution. It receives the context
 ```typescript
 type Middleware<Ctx, Args = unknown> = {
   name: string
-  args?: StandardSchema<Args>  // Uses Standard Schema (Zod, Valibot, ArkType)
+  args?: Validator<Args>  // Uses Zod, Valibot, ArkType, etc.
   handler: (ctx: Ctx & { args: Args }, next: () => Result) => Result
 }
 
@@ -36,10 +36,10 @@ type QueryBuilder<Ctx> = {
 | Property | Type | Description |
 |----------|------|-------------|
 | `name` | `string` | Unique identifier for the middleware |
-| `args` | `StandardSchema` | Optional Standard Schema for validating middleware-specific args |
+| `args` | `Validator` | Optional validator for middleware-specific args |
 | `handler` | `(ctx, next) => Result` | Middleware function that calls `next()` to proceed |
 
-> **Note:** Uses **Standard Schema** for consistency with the validation system. Works with Zod, Valibot, ArkType, or any Standard Schema compatible library.
+> **Note:** Works with Zod, Valibot, ArkType, or any Standard Schema compatible validator.
 
 ### Middleware Context
 
@@ -139,18 +139,13 @@ const api = createAPI({
 Create configurable middleware with args:
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const requireRole = (role: string) => t.middleware({
   name: `require-${role}`,
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      requiredRole: { type: "string" }
-    },
-    required: ["requiredRole"]
-  },
+  args: z.object({
+    requiredRole: z.string()
+  }),
   handler: async (ctx, next) => {
     const hasRole = ctx.userRoles.includes(ctx.args.requiredRole)
 
@@ -164,14 +159,9 @@ const requireRole = (role: string) => t.middleware({
 
 // Use with args
 const deleteUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   middleware: requireRole("admin"),
   handler: async (ctx, args) => { ... }
 })
@@ -184,14 +174,9 @@ Apply multiple middleware to a single operation:
 ```typescript
 // Multiple middleware on single operation
 const secureGetUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   middleware: [authMiddleware, rateLimitMiddleware, loggingMiddleware],
   handler: async (ctx, args) => { ... }
 })
@@ -301,25 +286,20 @@ export const rateLimitMiddleware = t.middleware({
 ### Validation Middleware
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 // middleware/validation.ts
 export const validateRequestMiddleware = t.middleware({
   name: "validateRequest",
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      schema: { type: "object" }
-    },
-    required: ["schema"]
-  },
+  args: z.object({
+    schema: z.object({})
+  }),
   handler: async (ctx, next) => {
     const { schema } = ctx.args
 
     try {
-      // Validate args against schema using Standard Schema
-      const result = StandardSchema.validate(schema, ctx.args)
+      // Validate args using Zod
+      const result = schema.safeParse(ctx.args)
       ctx.args = result
       return next()
     } catch (error) {
@@ -414,14 +394,9 @@ export const withLogging = t.middleware({
 const protectedAndLogged = [withAuth, withLogging]
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   middleware: protectedAndLogged,
   handler: async (ctx, args) => { ... }
 })
@@ -459,14 +434,9 @@ const api = createAPI({
 })
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   middleware: operationMiddleware,
   handler: async (ctx, args) => {
     console.log("3. Handler")
@@ -536,21 +506,16 @@ const authMiddleware = t.middleware({
 ### Middleware with Typed Args
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const rateLimitMiddleware = t.middleware({
   name: "rateLimit",
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      maxRequests: { type: "number", minimum: 1, maximum: 1000 },
-      windowMs: { type: "number", minimum: 1000, maximum: 3600000 }
-    },
-    required: ["maxRequests", "windowMs"]
-  },
+  args: z.object({
+    maxRequests: z.number().min(1).max(1000),
+    windowMs: z.number().min(1000).max(3600000)
+  }),
   handler: async (ctx, next) => {
-    // ctx.args is typed with Standard Schema
+    // ctx.args is typed with Zod
     ctx.args.maxRequests // number
     ctx.args.windowMs // number
 
@@ -578,14 +543,9 @@ const authMiddleware = t.middleware<Ctx>({
 
 // Apply to query - TypeScript ensures ctx is properly extended
 const getUser = t.query<Ctx>({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   middleware: authMiddleware,
   handler: async (ctx, args) => {
     // ctx has all Ctx properties plus userId from middleware
@@ -675,14 +635,9 @@ const errorHandlerMiddleware = t.middleware({
 
 // Use both - auth runs first, then error handler catches any errors
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   middleware: [authMiddleware, errorHandlerMiddleware],
   handler: async (ctx, args) => { ... }
 })
@@ -895,17 +850,13 @@ const authMiddleware = t.middleware({
 ### Caching Pattern
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const cacheMiddleware = t.middleware({
   name: "cache",
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      ttl: { type: "number", default: 300000 }
-    }
-  },
+  args: z.object({
+    ttl: z.number().default(300000)
+  }),
   handler: async (ctx, next) => {
     const key = `${ctx.operation}:${JSON.stringify(ctx.args)}`
 
@@ -925,18 +876,13 @@ const cacheMiddleware = t.middleware({
 ### Feature Flag Pattern
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const featureFlagMiddleware = t.middleware({
   name: "featureFlag",
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      flag: { type: "string" }
-    },
-    required: ["flag"]
-  },
+  args: z.object({
+    flag: z.string()
+  }),
   handler: async (ctx, next) => {
     const enabled = await ctx.featureFlags.isEnabled(ctx.args.flag)
 

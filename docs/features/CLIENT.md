@@ -53,7 +53,7 @@ The client system enables React components to interact with the server API with 
 ```typescript
 // server/api.ts
 import { defineContext, createAPI, createPublicAPI } from "@deessejs/drpc"
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const { t, createAPI } = defineContext({
   context: { db: myDatabase }
@@ -61,27 +61,17 @@ const { t, createAPI } = defineContext({
 
 // Public query - exposed via HTTP
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => { ... }
 })
 
 // Public mutation - exposed via HTTP
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string" }
-    },
-    required: ["name"]
-  },
+  args: z.object({
+    name: z.string()
+  }),
   handler: async (ctx, args) => { ... }
 })
 
@@ -92,14 +82,9 @@ const getAdminStats = t.internalQuery({
 
 // Internal mutation - NOT exposed via HTTP
 const deleteUser = t.internalMutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => { ... }
 })
 
@@ -292,17 +277,12 @@ Queries return cache keys that are stored in the client:
 
 ```typescript
 // Server definition
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return withMetadata(user, { keys: [["users", { id: args.id }]] })
@@ -317,14 +297,9 @@ Mutations return invalidation keys that trigger refetch:
 ```typescript
 // Server definition
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string" }
-    },
-    required: ["name"]
-  },
+  args: z.object({
+    name: z.string()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return withMetadata(user, { invalidate: [["users", "list"]] })

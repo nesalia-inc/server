@@ -12,22 +12,17 @@ Queries are read operations in `@deessejs/drpc`. They are used to fetch data fro
 ```typescript
 import { defineContext } from "@deessejs/drpc"
 import { ok, err } from "@deessejs/core"
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const { t } = defineContext({
   context: { db: myDatabase }
 })
 
 const getUser = t.query({
-  // Args validation with Standard Schema
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  // Args validation with Zod
+  args: z.object({
+    id: z.number()
+  }),
 
   // Handler receives context and args
   handler: async (ctx, args) => {
@@ -46,37 +41,28 @@ const getUser = t.query({
 
 ### Args
 
-Args are validated using Standard Schema. The schema defines what arguments the query accepts:
+Args are validated using your preferred validator (Zod, Valibot, ArkType, etc.). The schema defines what arguments the query accepts:
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 // Simple args
-const idSchema = {
-  [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-  type: "object",
-  properties: {
-    id: { type: "number" }
-  },
-  required: ["id"]
-}
+const idSchema = z.object({
+  id: z.number()
+})
 
 // Multiple args
-const listArgsSchema = {
-  [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-  type: "object",
-  properties: {
-    search: { type: "string" },
-    limit: { type: "number", default: 10 },
-    offset: { type: "number", default: 0 }
-  }
-}
+const listArgsSchema = z.object({
+  search: z.string().optional(),
+  limit: z.number().default(10),
+  offset: z.number().default(0)
+})
 
 // No args - can be omitted entirely
 // args is optional
 ```
 
-> **Note:** Standard Schema uses JSON Schema draft-07 format. Use `@standard-schema/zod` to wrap existing Zod schemas if preferred.
+> **Note:** Use your preferred validator like Zod, Valibot, or ArkType. The framework automatically detects and works with Standard Schema compatible libraries.
 
 ### Handler
 
@@ -184,18 +170,13 @@ const getAdminStats = t.internalQuery({
 Queries support lifecycle hooks:
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 import { withMetadata } from "@deessejs/drpc"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     return await ctx.db.users.find(args.id)
   }
@@ -296,17 +277,13 @@ const result = await response.json()
 ### Paginated Results
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const listUsers = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      page: { type: "number", default: 1 },
-      limit: { type: "number", default: 10 }
-    }
-  },
+  args: z.object({
+    page: z.number().default(1),
+    limit: z.number().default(10)
+  }),
 
   handler: async (ctx, args) => {
     const [users, total] = await Promise.all([
@@ -334,19 +311,15 @@ const listUsers = t.query({
 ### Filtering & Sorting
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const searchUsers = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      query: { type: "string" },
-      role: { type: "string", enum: ["admin", "user", "guest"] },
-      sortBy: { type: "string", enum: ["name", "createdAt"], default: "createdAt" },
-      sortOrder: { type: "string", enum: ["asc", "desc"], default: "desc" }
-    }
-  },
+  args: z.object({
+    query: z.string().optional(),
+    role: z.enum(["admin", "user", "guest"]).optional(),
+    sortBy: z.enum(["name", "createdAt"]).default("createdAt"),
+    sortOrder: z.enum(["asc", "desc"]).default("desc")
+  }),
 
   handler: async (ctx, args) => {
     const where = {
@@ -372,17 +345,12 @@ const searchUsers = t.query({
 ### Related Data
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const getUserWithPosts = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
 
   handler: async (ctx, args) => {
     const user = await ctx.db.users.findUnique({
@@ -500,7 +468,7 @@ handler: async (ctx, args) => {
 
 ## Best Practices
 
-1. **Use Standard Schema for args validation** - It's built-in and provides great DX
+1. **Use your preferred validator for args validation** - Use Zod, Valibot, or any Standard Schema compatible library
 
 2. **Return Result for explicit errors** - Makes error handling explicit
 
@@ -517,18 +485,13 @@ handler: async (ctx, args) => {
 ```typescript
 import { err } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 // Good: Explicit error handling with cache keys
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     if (!user) {
@@ -540,14 +503,10 @@ const getUser = t.query({
 
 // Good: Pagination with cache keys
 const listUsers = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      page: { type: "number", default: 1 },
-      limit: { type: "number", default: 10 }
-    }
-  },
+  args: z.object({
+    page: z.number().default(1),
+    limit: z.number().default(10)
+  }),
   handler: async (ctx, args) => {
     // ... implementation
     return withMetadata({ items, total }, {

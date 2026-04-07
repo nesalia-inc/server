@@ -91,17 +91,12 @@ return ok({ user: new User("John") })
 ### In Query Results
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)  // Automatically serialized
@@ -112,15 +107,12 @@ const getUser = t.query({
 ### In Mutation Results
 
 ```typescript
+import { z } from "zod"
+
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string" }
-    },
-    required: ["name"]
-  },
+  args: z.object({
+    name: z.string()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create({
       ...args,
@@ -176,15 +168,12 @@ const { t, createAPI } = defineContext({
 Types are automatically inferred:
 
 ```typescript
+import { z } from "zod"
+
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     return ok({
       id: 1,
@@ -207,31 +196,22 @@ type User = InferResult<typeof getUser>
 
 ### Standard Schema Integration
 
-Use Standard Schema for type inference:
+The framework uses Standard Schema internally for type inference. You can use Zod, Valibot, or any compatible validator:
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
-const userSchema = {
-  [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-  type: "object",
-  properties: {
-    id: { type: "number" },
-    name: { type: "string" },
-    createdAt: { type: "string" },  // Standard Schema doesn't preserve Date natively
-    bigInt: { type: "string" }  // BigInt as string
-  }
-}
+const userSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  createdAt: z.string(),  // Zod string
+  bigInt: z.string()  // BigInt as string
+})
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)

@@ -16,7 +16,7 @@ pnpm add @deessejs/drpc @deessejs/drpc/react
 // server/api.ts
 import { defineContext, createAPI, createPublicAPI } from "@deessejs/drpc"
 import { ok } from "@deessejs/drpc"
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const { t, createAPI } = defineContext({
   context: { db }
@@ -24,13 +24,9 @@ const { t, createAPI } = defineContext({
 
 // Query with automatic cache keys
 const listUsers = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      limit: { type: "number", default: 10 }
-    }
-  },
+  args: z.object({
+    limit: z.number().default(10)
+  }),
   handler: async (ctx, args) => {
     const users = await ctx.db.users.findMany({ take: args.limit })
     return ok(users, {
@@ -41,15 +37,10 @@ const listUsers = t.query({
 
 // Mutation with automatic invalidation
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string" },
-      email: { type: "string", format: "email" }
-    },
-    required: ["name", "email"]
-  },
+  args: z.object({
+    name: z.string(),
+    email: z.string().email()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return ok(user, {

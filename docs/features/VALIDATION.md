@@ -2,134 +2,51 @@
 
 ## Overview
 
-The validation system supports multiple validation libraries through the **Standard Schema** interface. This allows you to use any validation library (Zod, Valibot, ArkType, Typia) without adapter code - `@deessejs` automatically detects and works with any library implementing the standard.
+The validation system supports multiple validation libraries (Zod, Valibot, ArkType, Typia). You use your preferred validator directly - the framework automatically detects and works with any Standard Schema compatible library.
 
 ## Zero-Dependency Core
 
 `@deessejs/drpc` core has **zero validation dependencies**. You choose which library to use:
 
 ```typescript
-// No validator configured = use any Standard Schema compatible library
+import { z } from "zod"
+
 const { t, createAPI } = defineContext({
   context: { db: myDatabase }
 })
 
-// Works with Zod, Valibot, ArkType, Typia - any of them via @standard-schema adapters!
+// Just use Zod directly - it's that simple
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => { ... }
 })
 ```
 
 ## Supported Libraries
 
-| Library | Size | Standard Schema | Performance |
-|---------|------|-----------------|-------------|
-| **Valibot** | ~6KB | ✅ Yes | Excellent |
-| **ArkType** | ~12KB | ✅ Yes | Excellent |
-| **Zod** | ~30KB | ✅ Yes (v3) | Good |
-| **Typia** | ~0KB* | ✅ Yes | Fastest |
-| Yup | ~25KB | ❌ No | Good |
-| Superstruct | ~15KB | ❌ No | Good |
+| Library | Size | Performance |
+|---------|------|-------------|
+| **Zod** | ~30KB | Good |
+| **Valibot** | ~6KB | Excellent |
+| **ArkType** | ~12KB | Excellent |
+| **Typia** | ~0KB* | Fastest |
 
 *Typia generates validation code at compile time, no runtime bundle.
 
-## Standard Schema
-
-The [Standard Schema](https://standard-schema.dev) is a unified interface that lets any validation library work together. Libraries implement `StandardSchemaV1` which provides:
-
-- `validate(input)` - Validate data
-- `~standard.types.input` - Input type inference
-- `~standard.types.output` - Output type inference
-
-### How It Works
-
-```typescript
-import { type } from "arktype"
-import * as v from "valibot"
-import { z } from "zod"
-
-function validate<T extends StandardSchemaV1>(
-  schema: T,
-  input: StandardSchemaV1.InferInput<T>
-): StandardSchemaV1.InferOutput<T> {
-  const result = schema["~standard"].validate(input)
-  if (result.issues) throw new Error(result.issues)
-  return result.value
-}
-
-// All work the same way!
-validate(z.string(), "hello")           // Zod
-validate(v.string(), "hello")           // Valibot
-validate(type("string"), "hello")       // ArkType
-```
-
-### Auto-Detection
-
-`@deessejs` automatically detects which library you're using:
-
-```typescript
-// Just use any Standard Schema compatible library
-const getUser = t.query({
-  args: z.object({ id: z.number() }),  // Detected as Zod
-  handler: async (ctx, args) => { ... }
-})
-
-const createUser = t.mutation({
-  args: v.object({                       // Detected as Valibot
-    name: v.string(),
-    email: v.pipe(v.string(), v.email())
-  }),
-  handler: async (ctx, args) => { ... }
-})
-
-const getPost = t.query({
-  args: type({ id: "number" }),         // Detected as ArkType
-  handler: async (ctx, args) => { ... }
-})
-```
-
 ## Usage Examples
 
-### With Standard Schema (Native JSON Schema)
+### With Zod (Recommended)
 
 ```typescript
-import * as StandardSchema from "standard-schema"
-
-const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.users.find(args.id)
-    return ok(user)
-  }
-})
-```
-
-### With Zod (via @standard-schema/zod)
-
-```typescript
-import * as StandardSchema from "standard-schema"
-import { createSchema } from "@standard-schema/zod"
 import { z } from "zod"
+import { ok } from "@deessejs/core"
 
 const getUser = t.query({
-  args: createSchema(z.object({
+  args: z.object({
     id: z.number()
-  })),
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)
@@ -140,15 +57,13 @@ const getUser = t.query({
 ### With Valibot
 
 ```typescript
-import * as StandardSchema from "standard-schema"
-import { createSchema } from "@standard-schema/valibot"
 import { v } from "valibot"
 
 const getUser = t.query({
-  args: createSchema(v.object({
+  args: v.object({
     id: v.number(),
     include: v.optional(v.string())
-  })),
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)
@@ -159,15 +74,13 @@ const getUser = t.query({
 ### With ArkType
 
 ```typescript
-import * as StandardSchema from "standard-schema"
-import { createSchema } from "@standard-schema/arktype"
 import { type } from "arktype"
 
 const getUser = t.query({
-  args: createSchema(type({
+  args: type({
     id: "number",
     include: "string?"
-  })),
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     return ok(user)
@@ -219,19 +132,14 @@ export default defineConfig({
 Types are automatically inferred from schemas - no manual configuration needed:
 
 ```typescript
+import { z } from "zod"
 import { InferArgs, InferOutput } from "@deessejs/drpc"
-import * as StandardSchema from "standard-schema"
 
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string", minLength: 2 },
-      email: { type: "string", format: "email" }
-    },
-    required: ["name", "email"]
-  },
+  args: z.object({
+    name: z.string().min(2),
+    email: z.string().email()
+  }),
   handler: async (ctx, args) => {
     // args is automatically typed!
     // { name: string; email: string }
@@ -245,43 +153,45 @@ type CreateUserOutput = InferOutput<typeof createUser>
 // CreateUserArgs = { name: string; email: string }
 ```
 
-The framework uses Standard Schema's type utilities internally:
-
-```typescript
-import type { StandardSchemaV1 } from "@standard-schema/spec"
-
-export type InferArgs<T> = StandardSchemaV1.InferInput<T>
-export type InferOutput<T> = StandardSchemaV1.InferOutput<T>
-```
-
 ## Partial Validation
 
-Since `@deessejs` is validator-agnostic, schema manipulation (like partial or omit) should be done using your validator's native API. With Standard Schema, use JSON Schema composition:
+Since `@deessejs` is validator-agnostic, schema manipulation (like partial or omit) should be done using your validator's native API.
+
+### With Zod
 
 ```typescript
-// Standard Schema - use JSON Schema composition
-const updateUserSchema = {
-  [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-  type: "object",
-  properties: {
-    id: { type: "number" },
-    name: { type: "string" },
-    email: { type: "string", format: "email" }
-  },
-  required: ["id"]
-}
-
-// Or with @standard-schema/zod for Zod-style .partial()
-const { createSchema } from "@standard-schema/zod"
 import { z } from "zod"
+
 const userSchema = z.object({
   id: z.number(),
   name: z.string().min(2),
   email: z.string().email()
 })
-const updateUserSchema = createSchema(userSchema.partial())
 
-// Then use in mutation
+// Use .partial() for optional fields
+const updateUserSchema = userSchema.partial()
+const updateUser = t.mutation({
+  args: updateUserSchema,
+  handler: async (ctx, args) => { ... }
+})
+
+// Or use .omit() to exclude fields
+const createUserSchema = userSchema.omit({ id: true })
+```
+
+### With Valibot
+
+```typescript
+import { v } from "valibot"
+
+const userSchema = v.object({
+  id: v.number(),
+  name: v.pipe(v.string(), v.minLength(2)),
+  email: v.pipe(v.string(), v.email())
+})
+
+// Use .partial() for optional fields
+const updateUserSchema = v.partial(userSchema)
 const updateUser = t.mutation({
   args: updateUserSchema,
   handler: async (ctx, args) => { ... }
@@ -294,33 +204,23 @@ You can also use the same validator on the client to validate before sending:
 
 ```typescript
 // Client-side validation (avoids unnecessary network requests)
-import * as v from "valibot"
+import { z } from "zod"
 
-const validateInput = (data: unknown) => {
-  const schema = v.object({
-    name: v.pipe(v.string(), v.minLength(2)),
-    email: v.pipe(v.string(), v.email())
-  })
-
-  const result = schema["~standard"].validate(data)
-  if (result.issues) {
-    return { ok: false, issues: result.issues }
-  }
-  return { ok: true, value: result.value }
-}
+const schema = z.object({
+  name: z.string().min(2),
+  email: z.string().email()
+})
 
 // Use before calling API
-const validation = validateInput({ name: "J", email: "invalid" })
-if (!validation.ok) {
+const result = schema.safeParse({ name: "J", email: "invalid" })
+if (!result.success) {
   // Show error immediately - no network request needed!
   return
 }
 
 // Only send if valid
-await client.users.create(validation.value)
+await client.users.create(result.data)
 ```
-
-This is where **Valibot shines** - at ~6KB, you can bundle it with your client code for instant validation feedback.
 
 ## Error Normalization
 
@@ -349,49 +249,12 @@ Different libraries have different error formats:
 }
 ```
 
-### Internal Implementation
-
-The framework handles normalization automatically:
-
-```typescript
-// What happens inside @deessejs/drpc
-const validate = async (schema, data) => {
-  const standardSchema = schema["~standard"]
-  if (!standardSchema) {
-    throw new Error("Invalid schema: does not implement Standard Schema")
-  }
-
-  const result = await standardSchema.validate(data)
-
-  if (result.issues) {
-    // Normalization happens here
-    return {
-      ok: false,
-      error: {
-        code: "VALIDATION_ERROR",
-        message: "Validation failed",
-        details: result.issues.map(issue => ({
-          path: issue.path?.map(p =>
-            typeof p === "object" ? p.key : p
-          ).join(".") || "root",
-          message: issue.message
-        }))
-      }
-    }
-  }
-
-  return { ok: true, value: result.value }
-}
-```
-
-You don't need to handle this - it's done automatically by the framework.
-
 ## Performance Comparison
 
 ### Bundle Size
 
 | Configuration | Bundle Size | Reduction |
-|----------------|-------------|-----------|
+|---------------|-------------|-----------|
 | @deessejs + Zod | ~40KB | baseline |
 | @deessejs + Valibot | ~16KB | -60% |
 | @deessejs + ArkType | ~22KB | -45% |

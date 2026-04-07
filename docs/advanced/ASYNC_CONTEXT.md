@@ -81,15 +81,12 @@ async function someUtility() {
 ### In Handlers
 
 ```typescript
+import { z } from "zod"
+
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     // ctx is automatically stored in async context
     const user = await ctx.db.users.find(args.id)

@@ -60,21 +60,16 @@ export { keys }
 ### Use in Queries
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 import { ok, err } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
 import { t } from "../context"
 import { keys } from "./cache/keys"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
 
@@ -90,14 +85,10 @@ const getUser = t.query({
 })
 
 const listUsers = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      page: { type: "number", default: 1 },
-      limit: { type: "number", default: 10 }
-    }
-  },
+  args: z.object({
+    page: z.number().default(1),
+    limit: z.number().default(10)
+  }),
   handler: async (ctx, args) => {
     const users = await ctx.db.users.findMany({ ... })
 
@@ -114,21 +105,16 @@ const listUsers = t.query({
 ### Use in Mutations
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 import { ok } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
 import { keys } from "./cache/keys"
 
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string" },
-      email: { type: "string", format: "email" }
-    },
-    required: ["name", "email"]
-  },
+  args: z.object({
+    name: z.string(),
+    email: z.string().email()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
 
@@ -142,15 +128,10 @@ const createUser = t.mutation({
 })
 
 const updateUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" },
-      name: { type: "string" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number(),
+    name: z.string()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.update({
       where: { id: args.id },
@@ -167,14 +148,9 @@ const updateUser = t.mutation({
 })
 
 const deleteUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     await ctx.db.users.delete({ where: { id: args.id } })
 
@@ -268,19 +244,14 @@ withMetadata(user, { invalidate: ["users:list"] })
 ### Basic Query with Cache Keys
 
 ```typescript
+import { z } from "zod"
 import { err } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
-import * as StandardSchema from "standard-schema"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
 
@@ -299,14 +270,10 @@ const getUser = t.query({
 
 ```typescript
 const listUsers = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      page: { type: "number", default: 1 },
-      limit: { type: "number", default: 10 }
-    }
-  },
+  args: z.object({
+    page: z.number().default(1),
+    limit: z.number().default(10)
+  }),
   handler: async (ctx, args) => {
     const users = await ctx.db.users.findMany({
       take: args.limit,
@@ -345,15 +312,10 @@ const getConfig = t.query({
 
 ```typescript
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string" },
-      email: { type: "string", format: "email" }
-    },
-    required: ["name", "email"]
-  },
+  args: z.object({
+    name: z.string(),
+    email: z.string().email()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
 
@@ -368,15 +330,10 @@ const createUser = t.mutation({
 
 ```typescript
 const updateUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" },
-      name: { type: "string" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number(),
+    name: z.string()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.update({
       where: { id: args.id },
@@ -397,14 +354,9 @@ const updateUser = t.mutation({
 
 ```typescript
 const deleteUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     await ctx.db.users.delete({ where: { id: args.id } })
 
@@ -541,19 +493,14 @@ class CacheService {
 ### Using in Query
 
 ```typescript
+import { z } from "zod"
 import { err } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
-import * as StandardSchema from "standard-schema"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     // Try cache first
     const cacheKey = `users.${args.id}`
@@ -582,15 +529,10 @@ const getUser = t.query({
 
 ```typescript
 const updateUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" },
-      name: { type: "string" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number(),
+    name: z.string()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.update({
       where: { id: args.id },
@@ -785,17 +727,12 @@ For simple queries, generate cache keys automatically.
 ### Usage
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   autoCache: true,  // Generates key: ["getUser", { id: 1 }]
   handler: async (ctx, args) => {
     return ok(await ctx.db.users.find(args.id))

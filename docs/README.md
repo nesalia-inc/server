@@ -7,18 +7,13 @@
 **Functional First RPC** - Every operation is a first-class function. No classes, no configuration objects, just pure intent:
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 // Define once, call anywhere
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => ...
 })
 
@@ -113,20 +108,15 @@ const { t, createAPI } = defineContext({
 ### Define Query
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 import { ok, err } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
 import { keys } from "./cache/keys"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
     if (!user) {
@@ -140,21 +130,16 @@ const getUser = t.query({
 ### Define Mutation
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 import { ok } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
 import { keys } from "./cache/keys"
 
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string" },
-      email: { type: "string", format: "email" }
-    },
-    required: ["name", "email"]
-  },
+  args: z.object({
+    name: z.string(),
+    email: z.string().email()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     return withMetadata(user, { invalidate: [keys.users.list(), keys.users.count()] })
@@ -167,7 +152,7 @@ const createUser = t.mutation({
 Internal operations are only callable from server-side code, not exposed via HTTP:
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 import { ok } from "@deessejs/core"
 
 // Internal query - only callable from server code
@@ -184,14 +169,9 @@ const getAdminStats = t.internalQuery({
 
 // Internal mutation - only callable from server code
 const deleteUser = t.internalMutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     // Only server code can delete users
     await ctx.db.users.delete(args.id)
@@ -335,19 +315,14 @@ const stats = await api.users.getAdminStats({}) // Works - internal
 ### Emit Events
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 import { ok } from "@deessejs/core"
 import { withMetadata } from "@deessejs/drpc"
 
 const createUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      name: { type: "string" }
-    },
-    required: ["name"]
-  },
+  args: z.object({
+    name: z.string()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.create(args)
     ctx.send("user.created", { userId: user.id, email: user.email })

@@ -43,17 +43,12 @@ Content-Type: application/json
 ### Basic Error Mapping
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id)
 
@@ -78,16 +73,13 @@ Content-Type: application/json
 ### Authentication Error
 
 ```typescript
+import { z } from "zod"
+
 const login = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      email: { type: "string" },
-      password: { type: "string" }
-    },
-    required: ["email", "password"]
-  },
+  args: z.object({
+    email: z.string(),
+    password: z.string()
+  }),
   handler: async (ctx, args) => {
     const user = await ctx.db.users.authenticate(args.email, args.password)
 
@@ -112,15 +104,12 @@ Content-Type: application/json
 ### Permission Error
 
 ```typescript
+import { z } from "zod"
+
 const deleteUser = t.mutation({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     if (!ctx.isAdmin) {
       return err({ code: "FORBIDDEN", message: "Admin access required" })
@@ -234,17 +223,12 @@ return err(errors.NOT_FOUND)
 When a handler throws an exception:
 
 ```typescript
-import * as StandardSchema from "standard-schema"
+import { z } from "zod"
 
 const getUser = t.query({
-  args: {
-    [StandardSchema.$schema]: "http://json-schema.org/draft-07/schema#",
-    type: "object",
-    properties: {
-      id: { type: "number" }
-    },
-    required: ["id"]
-  },
+  args: z.object({
+    id: z.number()
+  }),
   handler: async (ctx, args) => {
     // This throws!
     throw new Error("Database connection failed")
