@@ -17,16 +17,16 @@ The router organizes your procedures into a hierarchical structure, enabling cle
 ```typescript
 const api = createAPI({
   router: t.router({
-    users: {
+    users: t.router({
       get: t.query({ ... }),
       create: t.mutation({ ... }),
       list: t.query({ ... }),
-    },
-    posts: {
+    }),
+    posts: t.router({
       get: t.query({ ... }),
       create: t.mutation({ ... }),
       list: t.query({ ... }),
-    },
+    }),
   }),
 })
 
