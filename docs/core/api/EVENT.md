@@ -1,11 +1,11 @@
 # `event()` - Defining Events
 
-Creates a typed event definition for the event registry.
+Creates a typed event definition for the event registry. The args are Standard Schema compatible (Zod, Valibot, ArkType, etc.).
 
 ## Signature
 
 ```typescript
-event<T extends Record<string, unknown>>(config: {
+event<T extends StandardSchemaV1>(config: {
   name: string
   args: T
 }): { name: string; args: T }
@@ -16,7 +16,7 @@ event<T extends Record<string, unknown>>(config: {
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `config.name` | `string` | The event name (e.g., `"user.created"`) |
-| `config.args` | `T` | The shape of the event data |
+| `config.args` | `StandardSchemaV1` | A Standard Schema compatible validator (Zod, Valibot, ArkType, etc.) |
 
 ## Returns
 
@@ -26,6 +26,7 @@ An event definition object that can be used in `defineEvents()`.
 
 ```typescript
 import { defineContext, event } from "@deessejs/drpc"
+import { z } from "zod"
 
 // Define events using the event() helper
 const { t, createAPI } = defineContext({
@@ -35,15 +36,24 @@ const { t, createAPI } = defineContext({
   events: {
     "user.created": event({
       name: "user.created",
-      args: { id: "number", email: "string" },
+      args: z.object({
+        id: z.number(),
+        email: z.string().email(),
+      }),
     }),
     "user.deleted": event({
       name: "user.deleted",
-      args: { id: "number" },
+      args: z.object({
+        id: z.number(),
+      }),
     }),
     "post.published": event({
       name: "post.published",
-      args: { id: "number", title: "string", authorId: "number" },
+      args: z.object({
+        id: z.number(),
+        title: z.string(),
+        authorId: z.number(),
+      }),
     }),
   },
 })
@@ -53,9 +63,10 @@ const { t, createAPI } = defineContext({
 
 The `event()` helper provides:
 
-1. **Type Safety** - Event arguments are typed
+1. **Type Safety** - Event arguments are typed via Standard Schema
 2. **IDE Support** - Autocomplete for event names and args
 3. **Validation** - Event shapes are validated at definition time
+4. **Interoperability** - Works with Zod, Valibot, ArkType, and other Standard Schema compliant validators
 
 ## Emitting Events
 
