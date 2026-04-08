@@ -14,14 +14,14 @@ This document outlines the detailed implementation plan for standalone `query()`
 function query<Ctx, Args, Output>(
   config: {
     args?: Schema,           // Optional Zod or Standard Schema compatible
-    handler: (ctx: Ctx, args: Args) => Result<Output> | Output | Promise<Result<Output>> | Promise<Output>
+    handler: (ctx: Ctx, args: Args) => Output | Promise<Output>
   }
 ): QueryProcedure<Ctx, Args, Output>
 
 function mutation<Ctx, Args, Output>(
   config: {
     args?: Schema,
-    handler: (ctx: Ctx, args: Args) => Result<Output> | Output | Promise<Result<Output>> | Promise<Output>
+    handler: (ctx: Ctx, args: Args) => Output | Promise<Output>
   }
 ): MutationProcedure<Ctx, Args, Output>
 ```
@@ -63,15 +63,21 @@ interface MutationProcedure<Ctx, Args, Output> {
 ### Basic Query
 
 ```typescript
-import { query, ok, err } from "@deessejs/server";
+import { query } from "@deessejs/server";
 
-const getUser = query({
-  handler: async (ctx, args: { id: number }) => {
+// Context must be explicitly typed
+interface Ctx {
+  db: { users: { find: (id: number) => Promise<User | null> } };
+  logger: typeof console;
+}
+
+const getUser = query<Ctx, { id: number }, User>({
+  handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id);
     if (!user) {
-      return err({ code: "NOT_FOUND", message: "User not found" });
+      throw { code: "NOT_FOUND", message: "User not found" };
     }
-    return ok(user);
+    return user;
   }
 });
 
@@ -92,7 +98,7 @@ const getUser = query({
   args: z.object({ id: z.number() }),
   handler: async (ctx, args) => {
     // args.id is type-safe here
-    return ok(await ctx.db.users.find(args.id));
+    return await ctx.db.users.find(args.id);
   }
 });
 ```
@@ -117,15 +123,24 @@ await getUserWithHooks.execute(ctx, { id: 1 });
 ### Mutation
 
 ```typescript
-import { mutation, ok, err } from "@deessejs/server";
+import { mutation } from "@deessejs/server";
 
-const createUser = mutation({
-  handler: async (ctx, args: { name: string; email: string }) => {
+interface Ctx {
+  db: {
+    users: {
+      findByEmail: (email: string) => Promise<User | null>;
+      create: (data: { name: string; email: string }) => Promise<User>;
+    };
+  };
+}
+
+const createUser = mutation<Ctx, { name: string; email: string }, User>({
+  handler: async (ctx, args) => {
     const existing = await ctx.db.users.findByEmail(args.email);
     if (existing) {
-      return err({ code: "CONFLICT", message: "Email already exists" });
+      throw { code: "CONFLICT", message: "Email already exists" };
     }
-    return ok(await ctx.db.users.create(args));
+    return await ctx.db.users.create(args);
   }
 });
 
@@ -144,7 +159,7 @@ const result = await createUser.execute(ctx, {
 | Hook | Parameters | When | Error Behavior |
 |------|------------|------|----------------|
 | `beforeInvoke` | `(ctx: Ctx, args: Args)` | Before handler | **Propagated** - cancels execution |
-| `afterInvoke` | `(ctx: Ctx, args: Args, result: Result<Output>)` | Always after handler | Fail silent, logged |
+| `afterInvoke` | `(ctx: Ctx, args: Args, result: Output \| Error)` | Always after handler | Fail silent, logged |
 | `onSuccess` | `(ctx: Ctx, args: Args, data: Output)` | Handler succeeded | Fail silent, logged |
 | `onError` | `(ctx: Ctx, args: Args, error: unknown)` | Handler failed or hook error | Fail silent, logged |
 
@@ -152,13 +167,13 @@ const result = await createUser.execute(ctx, {
 
 ```typescript
 // beforeInvoke throws → execution cancelled, error propagated
-const op = query({ handler: async () => ok(1) })
+const op = query({ handler: async () => 1 })
   .beforeInvoke(() => {
     throw new Error("beforeInvoke failed"); // This will propagate
   });
 
 // onSuccess/onError throw → fail silent, not propagated
-const op2 = query({ handler: async () => ok(1) })
+const op2 = query({ handler: async () => 1 })
   .onSuccess(() => {
     throw new Error("onSuccess failed"); // This will NOT propagate
   });
@@ -173,26 +188,25 @@ const op2 = query({ handler: async () => ok(1) })
 ## 4. Execution Flow
 
 ```
-1. Validate args (if schema provided) → err if invalid
+1. Validate args (if schema provided) → throw if invalid
 2. Execute beforeInvoke hooks → if any throws, skip to step 6
 3. Execute handler(ctx, args)
-   - If handler throws → wrap in err
-   - If handler returns Result → use as-is
-   - If handler returns raw value → wrap in ok(value)
+   - If handler throws → catch and store error
+   - If handler returns value → store as success
 4. If success → execute onSuccess hooks
 5. If error → execute onError hooks
 6. Execute afterInvoke hooks (always)
-7. Return final Result
+7. Return result (value or throws)
 ```
 
 ### Handler Return Types
 
 ```typescript
 // All these are valid:
-handler: () => ok(value)                    // Explicit Result
-handler: () => value                        // Wrapped automatically
-handler: async () => ok(await fetch())       // Async + Result
-handler: async () => await fetch()            // Async + auto-wrap
+handler: () => value                        // Return value
+handler: async () => await fetch()           // Async return
+handler: () => { throw new Error(...) }      // Throw on error
+handler: async () => { throw new Error(...) } // Async throw
 ```
 
 ---
@@ -203,7 +217,14 @@ handler: async () => await fetch()            // Async + auto-wrap
 
 ```typescript
 // Context passed explicitly to execute()
-const result = await getUser.execute(ctx, args);
+// Ctx type must be explicit (no inference from execute)
+const result = await getUser.execute<Ctx>(ctx, args);
+
+// Example with inline context
+const ctx: Ctx = {
+  db: { users: { find: async (id) => ({ id, name: "John" }) } },
+  logger: console,
+};
 ```
 
 ### Context is NOT:
@@ -282,7 +303,7 @@ package/server/src/
 ## 9. Dependencies
 
 No new runtime dependencies required. Phase 2 uses:
-- `@deessejs/core` (peer dependency) - for `Result` type and `ok()`/`err()` helpers
+- `@deessejs/core` (peer dependency) - for error handling types
 - Existing devDependencies already configured
 
 Schema validation (when added):
