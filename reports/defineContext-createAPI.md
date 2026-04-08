@@ -114,22 +114,22 @@ interface QueryBuilder<Ctx> {
   // Procedures
   query<Args, Output>(config: {
     args?: Schema
-    handler: (ctx: Ctx, args: Args) => Promise<Result<Output>>
+    handler: (ctx: Ctx, args: Args) => Promise<Output>
   }): Query<Ctx, Args, Output>
 
   mutation<Args, Output>(config: {
     args?: Schema
-    handler: (ctx: Ctx, args: Args) => Promise<Result<Output>>
+    handler: (ctx: Ctx, args: Args) => Promise<Output>
   }): Mutation<Ctx, Args, Output>
 
   // Internal procedures (not exposed via HTTP)
   internalQuery<Args, Output>(config: {
-    handler: (ctx: Ctx, args: Args) => Promise<Result<Output>>
+    handler: (ctx: Ctx, args: Args) => Promise<Output>
   }): InternalQuery<Ctx, Args, Output>
 
   internalMutation<Args, Output>(config: {
     args?: Schema
-    handler: (ctx: Ctx, args: Args) => Promise<Result<Output>>
+    handler: (ctx: Ctx, args: Args) => Promise<Output>
   }): InternalMutation<Ctx, Args, Output>
 
   // Router and middleware
@@ -137,7 +137,7 @@ interface QueryBuilder<Ctx> {
   middleware(config: {
     name: string
     args?: unknown
-    handler: (ctx: Ctx, args: unknown, next: () => Promise<Result<unknown>>) => Promise<Result<unknown>>
+    handler: (ctx: Ctx, args: unknown, next: () => Promise<unknown>) => Promise<unknown>
   }): Middleware<Ctx, Args>
 
   // Events
@@ -163,7 +163,7 @@ interface QueryBuilder<Ctx> {
 // Simple query
 const getUser = t.query({
   handler: async (ctx, args) => {
-    return ok(await ctx.db.users.find(args.id));
+    return await ctx.db.users.find(args.id);
   }
 });
 
@@ -173,9 +173,9 @@ const getPost = t.query({
   handler: async (ctx, args) => {
     const post = await ctx.db.posts.find(args.id);
     if (!post) {
-      return err({ code: "NOT_FOUND", message: "Post not found" });
+      throw { code: "NOT_FOUND", message: "Post not found" };
     }
-    return ok(post);
+    return post;
   }
 });
 
@@ -184,9 +184,9 @@ const createPost = t.mutation({
   args: z.object({ title: z.string(), content: z.string() }),
   handler: async (ctx, args) => {
     if (!ctx.user) {
-      return err({ code: "UNAUTHORIZED", message: "Must be logged in" });
+      throw { code: "UNAUTHORIZED", message: "Must be logged in" };
     }
-    return ok(await ctx.db.posts.create({ ...args, authorId: ctx.user.id }));
+    return await ctx.db.posts.create({ ...args, authorId: ctx.user.id });
   }
 });
 
@@ -194,7 +194,7 @@ const createPost = t.mutation({
 const deleteAll = t.internalMutation({
   handler: async (ctx) => {
     await ctx.db.posts.deleteAll();
-    return ok({ deleted: true });
+    return { deleted: true };
   }
 });
 ```
@@ -204,14 +204,14 @@ const deleteAll = t.internalMutation({
 ```typescript
 const appRouter = t.router({
   users: t.router({
-    get: t.query({ handler: async (ctx, args) => ok(await ctx.db.users.find(args.id)) }),
-    create: t.mutation({ handler: async (ctx, args) => ok(await ctx.db.users.create(args)) }),
-    list: t.query({ handler: async (ctx) => ok(await ctx.db.users.findAll()) }),
-    delete: t.internalMutation({ handler: async (ctx, args) => ok(await ctx.db.users.delete(args.id)) }),
+    get: t.query({ handler: async (ctx, args) => ctx.db.users.find(args.id) }),
+    create: t.mutation({ handler: async (ctx, args) => ctx.db.users.create(args) }),
+    list: t.query({ handler: async (ctx) => ctx.db.users.findAll() }),
+    delete: t.internalMutation({ handler: async (ctx, args) => ctx.db.users.delete(args.id) }),
   }),
   posts: t.router({
-    get: t.query({ handler: async (ctx, args) => ok(await ctx.db.posts.find(args.id)) }),
-    create: t.mutation({ handler: async (ctx, args) => ok(await ctx.db.posts.create(args)) }),
+    get: t.query({ handler: async (ctx, args) => ctx.db.posts.find(args.id) }),
+    create: t.mutation({ handler: async (ctx, args) => ctx.db.posts.create(args) }),
   }),
 });
 ```
@@ -262,7 +262,7 @@ interface APIInstance<Ctx, TRoutes extends Router = Router> {
   execute<TRoute extends keyof TRoutes>(
     route: TRoute,
     args: any
-  ): Promise<Result<any>>
+  ): Promise<any>
 }
 ```
 
@@ -276,7 +276,7 @@ createPublicAPI(api: APIInstance): PublicAPIInstance
 createClient(api: APIInstance): PublicAPIInstance
 
 // Create executor for testing
-createLocalExecutor(api: APIInstance): (route: string, args: any) => Promise<Result<any>>
+createLocalExecutor(api: APIInstance): (route: string, args: any) => Promise<any>
 ```
 
 ### Usage
@@ -298,35 +298,12 @@ const handler = api.createHandler();
 
 ---
 
-## 5. Result Type and Helpers
-
-### Result Type
-
-```typescript
-type Result<Success, Error = { code: string; message: string }> =
-  | { ok: true; value: Success }
-  | { ok: false; error: Error };
-```
-
-### Helper Functions
-
-```typescript
-function ok<T>(value: T): { ok: true; value: T }
-function err<E extends { code: string; message: string }>(error: E): { ok: false; error: E }
-function withMetadata<T, Keys extends CacheKey[]>(
-  data: T,
-  metadata: { keys?: Keys; invalidate?: Keys; ttl?: number }
-): { ok: true; value: T & { keys?: Keys; invalidate?: Keys; ttl?: number } }
-```
-
----
-
-## 6. File Structure
+## 5. File Structure
 
 ```
 package/server/src/
   index.ts                    # Main exports
-  types.ts                    # Shared types (Context, Procedure, Result, etc.)
+  types.ts                    # Shared types (Context, Procedure, Router, etc.)
   context.ts                  # defineContext() implementation
   query-builder.ts           # t (QueryBuilder) with t.query/mutation/router/etc.
   procedures.ts              # Query, Mutation, InternalQuery, InternalMutation types
@@ -339,7 +316,7 @@ package/server/src/
 
 ### Implementation Order
 
-1. **types.ts** - Core types (`Result`, `Context`, `Procedure`, `Router`)
+1. **types.ts** - Core types (`Context`, `Procedure`, `Router`)
 2. **errors.ts** - Error handling types
 3. **context.ts** - `defineContext()` returns `{ t, createAPI }`
 4. **query-builder.ts** - `t` object with all methods (`query`, `mutation`, `router`, `middleware`, `on`)
@@ -352,20 +329,20 @@ package/server/src/
 
 ---
 
-## 7. Key Design Decisions
+## 6. Key Design Decisions
 
 | Decision | Choice | Rationale |
 |----------|---------|-----------|
 | Context provided directly | `context: Ctx` | Simple, no async factory needed |
 | Returns `t` object | QueryBuilder pattern | Familiar tRPC-like API |
-| `ok()`/`err()` helpers | For returning results | Clear success/error distinction |
+| Handler throws on error | Direct error throwing | Simple error handling |
 | Internal procedures | Separate types | Security model (not exposed via HTTP) |
 | Hierarchical router | `t.router({ nested: t.router({}) })` | Organized procedure structure |
 | Plugins deferred | Not in initial scope | Keep initial API simple |
 
 ---
 
-## 8. Comparison with tRPC
+## 7. Comparison with tRPC
 
 | Aspect | tRPC | @deessejs/server |
 |--------|------|------------------|
@@ -380,10 +357,10 @@ package/server/src/
 
 ---
 
-## 9. Usage Example: Full Flow
+## 8. Usage Example: Full Flow
 
 ```typescript
-import { defineContext, t, createAPI, createPublicAPI, ok, err } from "@deessejs/server";
+import { defineContext, t, createAPI, createPublicAPI } from "@deessejs/server";
 import { z } from "zod";
 
 // 1. Define context
@@ -409,9 +386,9 @@ const appRouter = t.router({
       handler: async (ctx, args) => {
         const user = await ctx.db.users.find(args.id);
         if (!user) {
-          return err({ code: "NOT_FOUND", message: "User not found" });
+          throw { code: "NOT_FOUND", message: "User not found" };
         }
-        return ok(user);
+        return user;
       }
     }),
     create: t.mutation({
@@ -419,16 +396,16 @@ const appRouter = t.router({
       handler: async (ctx, args) => {
         const existing = await ctx.db.users.findByEmail(args.email);
         if (existing) {
-          return err({ code: "CONFLICT", message: "Email already exists" });
+          throw { code: "CONFLICT", message: "Email already exists" };
         }
-        return ok(await ctx.db.users.create(args));
+        return await ctx.db.users.create(args);
       }
     }),
     delete: t.internalMutation({
       args: z.object({ id: z.number() }),
       handler: async (ctx, args) => {
         await ctx.db.users.delete(args.id);
-        return ok({ success: true });
+        return { success: true };
       }
     }),
   }),
@@ -436,7 +413,7 @@ const appRouter = t.router({
     get: t.query({
       args: z.object({ id: z.number() }),
       handler: async (ctx, args) => {
-        return ok(await ctx.db.posts.find(args.id));
+        return await ctx.db.posts.find(args.id);
       }
     }),
   }),
@@ -452,16 +429,12 @@ const clientApi = createPublicAPI(api);
 
 // 5. Execute
 const result = await api.execute("users.get", { id: 1 });
-if (!result.ok) {
-  console.error(result.error.code);
-} else {
-  console.log(result.value);
-}
+console.log(result);
 ```
 
 ---
 
-## 10. Exports
+## 9. Exports
 
 ### Expected Public API
 
@@ -483,11 +456,6 @@ export {
   InternalMutation,
   Router,
 
-  // Helpers
-  ok,
-  err,
-  withMetadata,
-
   // Middleware
   Middleware,
 
@@ -497,15 +465,13 @@ export {
   EventPayload,
 
   // Types
-  Result,
   CacheKey,
-  WithMetadata,
 };
 ```
 
 ---
 
-## 11. Open Questions
+## 10. Open Questions
 
 | Question | Recommendation |
 |----------|----------------|
@@ -517,10 +483,10 @@ export {
 
 ---
 
-## 12. Dependencies
+## 11. Dependencies
 
 No new runtime dependencies required. Uses:
-- `@deessejs/core` (peer dependency) - for `Result` type and `ok()`/`err()` helpers
+- `@deessejs/core` (peer dependency) - for error handling utilities
 - Existing devDependencies (vitest, eslint, typescript, typescript-eslint)
 
 Optional (when adding schema validation):
