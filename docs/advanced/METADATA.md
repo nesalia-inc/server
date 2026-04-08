@@ -9,7 +9,7 @@ The metadata system allows extracting information about your API routes, includi
 ### Basic Usage
 
 ```typescript
-import { createAPI, extractMetadata } from "@deessejs/drpc"
+import { createAPI, extractMetadata } from "@deessejs/server"
 
 const api = createAPI({
   router: t.router({
@@ -75,7 +75,7 @@ const createUser = t.mutation({
 ### Generate OpenAPI Spec
 
 ```typescript
-import { generateOpenAPI } from "@deessejs/drpc"
+import { generateOpenAPI } from "@deessejs/server"
 
 const openapi = generateOpenAPI(api, {
   info: {
@@ -123,7 +123,7 @@ console.log(openapi)
 ### Save as JSON
 
 ```typescript
-import { generateOpenAPI } from "@deessejs/drpc"
+import { generateOpenAPI } from "@deessejs/server"
 import { writeFile } from "fs/promises"
 
 const openapi = generateOpenAPI(api)
@@ -136,7 +136,7 @@ await writeFile("./openapi.json", JSON.stringify(openapi, null, 2))
 ### List All Routes
 
 ```typescript
-import { listRoutes } from "@deessejs/drpc"
+import { listRoutes } from "@deessejs/server"
 
 const routes = listRoutes(api)
 
@@ -172,7 +172,7 @@ const userRoutes = listRoutes(api, { tags: ["users"] })
 ### Extract Input Schema
 
 ```typescript
-import { getInputSchema, getOutputSchema } from "@deessejs/drpc"
+import { getInputSchema, getOutputSchema } from "@deessejs/server"
 
 const inputSchema = getInputSchema(api.users.get)
 const outputSchema = getOutputSchema(api.users.get)
@@ -187,7 +187,7 @@ console.log(outputSchema)
 ### Convert to JSON Schema
 
 ```typescript
-import { toJsonSchema } from "@deessejs/drpc"
+import { toJsonSchema } from "@deessejs/server"
 
 const jsonSchema = toJsonSchema(z.object({
   name: z.string(),
@@ -212,7 +212,7 @@ console.log(jsonSchema)
 ### HTML Documentation
 
 ```typescript
-import { generateDocs } from "@deessejs/drpc"
+import { generateDocs } from "@deessejs/server"
 
 const html = generateDocs(api, {
   title: "API Documentation",
@@ -227,7 +227,7 @@ await writeFile("./docs/index.html", html)
 ### Markdown Generation
 
 ```typescript
-import { generateMarkdown } from "@deessejs/drpc"
+import { generateMarkdown } from "@deessejs/server"
 
 const markdown = generateMarkdown(api)
 
@@ -264,7 +264,7 @@ Create a new user
 ### Generate TypeScript Client
 
 ```typescript
-import { generateClient } from "@deessejs/drpc"
+import { generateClient } from "@deessejs/server"
 
 const clientCode = generateClient(api, {
   language: "typescript",
@@ -288,7 +288,7 @@ export class MyApiClient {
 ### Generate JavaScript Client
 
 ```typescript
-import { generateClient } from "@deessejs/drpc"
+import { generateClient } from "@deessejs/server"
 
 const clientCode = generateClient(api, {
   language: "javascript",
@@ -371,7 +371,7 @@ app.get("/explorer", (c) => {
 ### Postman Collection
 
 ```typescript
-import { generatePostmanCollection } from "@deessejs/drpc"
+import { generatePostmanCollection } from "@deessejs/server"
 
 const collection = generatePostmanCollection(api, {
   name: "My API",
@@ -382,7 +382,7 @@ const collection = generatePostmanCollection(api, {
 ### TypeScript Types
 
 ```typescript
-import { generateTypes } from "@deessejs/drpc"
+import { generateTypes } from "@deessejs/server"
 
 const types = generateTypes(api)
 

@@ -54,7 +54,7 @@ client.users.list
 
 ```typescript
 // server/api.ts
-import { createPublicAPI } from "@deessejs/drpc"
+import { createPublicAPI } from "@deessejs/server"
 
 const api = createAPI({
   router: t.router({

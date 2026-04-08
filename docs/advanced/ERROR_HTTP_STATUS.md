@@ -2,7 +2,7 @@
 
 ## Overview
 
-The error mapping system translates `@deessejs/drpc` errors (`Result<T, E>`) into appropriate HTTP status codes. This is essential for SEO, monitoring tools (Sentry, Datadog), and proper CDN cache handling.
+The error mapping system translates `@deessejs/server` errors (`Result<T, E>`) into appropriate HTTP status codes. This is essential for SEO, monitoring tools (Sentry, Datadog), and proper CDN cache handling.
 
 ## The Problem
 
@@ -184,7 +184,7 @@ const { t, createAPI } = defineContext({
 ### Using defineErrors
 
 ```typescript
-import { defineErrors } from "@deessejs/drpc"
+import { defineErrors } from "@deessejs/server"
 
 const errors = defineErrors({
   NOT_FOUND: { message: "Resource not found", status: 404 },

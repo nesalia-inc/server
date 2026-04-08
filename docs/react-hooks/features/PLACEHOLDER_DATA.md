@@ -24,7 +24,7 @@ useQuery({
 })
 ```
 
-## Proposed @deessejs/drpc/react Implementation
+## Proposed @deessejs/server/react Implementation
 
 ### Basic Placeholder
 

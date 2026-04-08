@@ -16,7 +16,7 @@
                                   │
                                   ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│                     @deessejs/drpc                                   │
+│                     @deessejs/server                                   │
 │                                                                      │
 │  createAPI() ──────► drpc ──────► Full API (all operations)        │
 │                            │                                        │
@@ -90,7 +90,7 @@ export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(auth)
 ```typescript
 // app/api/drpc/[...slug]/route.ts - drpc
 import { client } from "@/server/drpc"
-import { toNextJsHandler } from "@deessejs/drpc-next"
+import { toNextJsHandler } from "@deessejs/server-next"
 
 export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
 ```

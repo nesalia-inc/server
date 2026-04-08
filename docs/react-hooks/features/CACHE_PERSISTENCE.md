@@ -22,7 +22,7 @@ persistQueryClient({
 })
 ```
 
-## Proposed @deessejs/drpc/react Implementation
+## Proposed @deessejs/server/react Implementation
 
 ### Storage Adapters
 
@@ -87,7 +87,7 @@ const indexedDBPersister = {
 ### QueryClient with Persistence
 
 ```typescript
-import { QueryClient, persistQueryClient } from "@deessejs/drpc/react"
+import { QueryClient, persistQueryClient } from "@deessejs/server/react"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -110,7 +110,7 @@ persistQueryClient({
 
 ```typescript
 // App.tsx
-import { PersistQueryClientProvider } from "@deessejs/drpc/react"
+import { PersistQueryClientProvider } from "@deessejs/server/react"
 
 function App() {
   return (
@@ -224,7 +224,7 @@ export function PersistQueryClientProvider({
 ### Network Status Detection
 
 ```typescript
-import { onlineManager } from "@deessejs/drpc/react"
+import { onlineManager } from "@deessejs/server/react"
 
 function NetworkStatus() {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
@@ -253,7 +253,7 @@ function NetworkStatus() {
 ### Offline Mutations
 
 ```typescript
-import { mutationQueue } from "@deessejs/drpc/react"
+import { mutationQueue } from "@deessejs/server/react"
 
 function OfflineMutations() {
   const { pendingMutations, retryAll } = mutationQueue.usePending()
@@ -310,7 +310,7 @@ const mutationQueue = {
 
 ```typescript
 // Server: Dehydrate state
-import { dehydrate } from "@deessejs/drpc/react"
+import { dehydrate } from "@deessejs/server/react"
 
 export async function getServerSideProps() {
   const queryClient = new QueryClient()

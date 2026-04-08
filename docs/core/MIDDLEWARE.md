@@ -2,7 +2,7 @@
 
 ## Overview
 
-The middleware system in `@deessejs/drpc` allows intercepting and modifying requests before they reach handlers. Middleware is applied **globally** via `createAPI()`, enabling cross-cutting concerns like authentication, authorization, logging, and rate limiting.
+The middleware system in `@deessejs/server` allows intercepting and modifying requests before they reach handlers. Middleware is applied **globally** via `createAPI()`, enabling cross-cutting concerns like authentication, authorization, logging, and rate limiting.
 
 ## Core Concepts
 
@@ -528,7 +528,7 @@ const api = createAPI({
 ### Unit Testing Middleware
 
 ```typescript
-import { defineContext, createAPI, t } from "@deessejs/drpc"
+import { defineContext, createAPI, t } from "@deessejs/server"
 import { ok, err } from "@deessejs/core"
 
 describe("authMiddleware", () => {
@@ -582,7 +582,7 @@ describe("authMiddleware", () => {
 ### Integration Testing with Middleware
 
 ```typescript
-import { createLocalExecutor } from "@deessejs/drpc"
+import { createLocalExecutor } from "@deessejs/server"
 
 describe("API with Middleware", () => {
   const executor = createLocalExecutor(api)

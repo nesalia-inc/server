@@ -410,7 +410,7 @@ describe("getUser Query Hooks", () => {
 ### Integration Testing
 
 ```typescript
-import { createLocalExecutor } from "@deessejs/drpc"
+import { createLocalExecutor } from "@deessejs/server"
 
 describe("API with Lifecycle Hooks", () => {
   const executor = createLocalExecutor(api)

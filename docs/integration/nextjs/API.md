@@ -5,7 +5,7 @@
 Creates a client-safe API from the full API. Filters out internal operations (`internalQuery`, `internalMutation`) at runtime so they cannot be called via HTTP.
 
 ```typescript
-import { defineContext, createAPI, createClient } from "@deessejs/drpc"
+import { defineContext, createAPI, createClient } from "@deessejs/server"
 
 const { t, createAPI } = defineContext({
   context: { db: myDatabase },
@@ -40,7 +40,7 @@ Creates Next.js route handlers from a client API instance.
 ```typescript
 // app/api/drpc/[...slug]/route.ts
 import { client } from "@/server/drpc"
-import { toNextJsHandler } from "@deessejs/drpc-next"
+import { toNextJsHandler } from "@deessejs/server-next"
 
 export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
 ```
@@ -85,7 +85,7 @@ toNextJsHandler(client, {
 Returns only the POST handler for backwards compatibility.
 
 ```typescript
-import { createRouteHandler } from "@deessejs/drpc-next"
+import { createRouteHandler } from "@deessejs/server-next"
 import { client } from "@/server/drpc"
 
 export const POST = createRouteHandler(client)

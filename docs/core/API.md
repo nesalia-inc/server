@@ -1,6 +1,6 @@
 # API Reference
 
-Complete API reference for `@deessejs/drpc`.
+Complete API reference for `@deessejs/server`.
 
 ## Overview
 
@@ -30,7 +30,7 @@ import {
   WithMetadata,
   EventRegistry,
   EventPayload,
-} from "@deessejs/drpc"
+} from "@deessejs/server"
 ```
 
 ## Documentation Structure
@@ -110,7 +110,7 @@ import {
 ## Next.js Integration
 
 ```typescript
-import { toNextJsHandler } from "@deessejs/drpc-next"
+import { toNextJsHandler } from "@deessejs/server-next"
 
 export const { POST, GET } = toNextJsHandler(client)
 ```

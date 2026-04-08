@@ -38,7 +38,7 @@ const createUser = t.mutation({
 // CreateUser.tsx
 "use client"
 import { useState } from "react"
-import { useMutation } from "@deessejs/drpc/react"
+import { useMutation } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function CreateUserForm() {

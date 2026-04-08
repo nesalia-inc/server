@@ -35,7 +35,7 @@ function defineContext<Ctx, Plugins extends Plugin<Ctx>[]>(
 ## Basic Usage
 
 ```typescript
-import { defineContext } from "@deessejs/drpc"
+import { defineContext } from "@deessejs/server"
 
 const { t, createAPI } = defineContext({
   context: {
@@ -48,7 +48,7 @@ const { t, createAPI } = defineContext({
 ## Complete Example
 
 ```typescript
-import { defineContext } from "@deessejs/drpc"
+import { defineContext } from "@deessejs/server"
 import { authPlugin } from "./plugins/auth"
 import { cachePlugin } from "./plugins/cache"
 
@@ -103,7 +103,7 @@ const getUser = t.query({
 Plugins extend the context with additional properties.
 
 ```typescript
-import { defineContext, plugin } from "@deessejs/drpc"
+import { defineContext, plugin } from "@deessejs/server"
 
 const authPlugin = plugin({
   name: "auth",
@@ -144,7 +144,7 @@ const createPost = t.mutation({
 Define typed events for decoupled communication.
 
 ```typescript
-import { defineContext, defineEvents } from "@deessejs/drpc"
+import { defineContext, defineEvents } from "@deessejs/server"
 
 const { t, createAPI } = defineContext({
   context: {

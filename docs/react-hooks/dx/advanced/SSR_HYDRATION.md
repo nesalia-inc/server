@@ -8,8 +8,8 @@ Next.js App Router and React Server Components (RSC) support for instant data wi
 
 ```tsx
 // app/layout.tsx
-import { QueryClient } from "@deessejs/drpc/react"
-import { HydrationBoundary, dehydrate } from "@deessejs/drpc/react"
+import { QueryClient } from "@deessejs/server/react"
+import { HydrationBoundary, dehydrate } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export default async function Layout({ children }) {
@@ -36,7 +36,7 @@ export default async function Layout({ children }) {
 ### Dehydrate Query State
 
 ```typescript
-import { dehydrate } from "@deessejs/drpc/react"
+import { dehydrate } from "@deessejs/server/react"
 
 // After prefetching, dehydrate the state
 const dehydratedState = dehydrate(queryClient)
@@ -52,7 +52,7 @@ return <HydrationBoundary state={dehydratedState}>{children}</HydrationBoundary>
 ```tsx
 // app/providers.tsx
 "use client"
-import { QueryClientProvider } from "@deessejs/drpc/react"
+import { QueryClientProvider } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function Providers({ children, dehydratedState }) {
@@ -69,7 +69,7 @@ export function Providers({ children, dehydratedState }) {
 ```tsx
 // components/UserProfile.tsx
 "use client"
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function UserProfile() {
@@ -135,7 +135,7 @@ await queryClient.prefetchQuery(client.users.me, { args: {} })
 ### Selective Hydration
 
 ```tsx
-import { HydrationBoundary, dehydration } from "@deessejs/drpc/react"
+import { HydrationBoundary, dehydration } from "@deessejs/server/react"
 
 // Only dehydrate specific queries
 const selectiveDehydration = {
@@ -168,7 +168,7 @@ const selectiveDehydration = {
 ## TypeScript Types
 
 ```typescript
-import type { DehydratedState } from "@deessejs/drpc/react"
+import type { DehydratedState } from "@deessejs/server/react"
 
 interface PageProps {
   dehydratedState?: DehydratedState

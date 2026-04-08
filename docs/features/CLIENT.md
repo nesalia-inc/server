@@ -6,9 +6,9 @@ The client system enables React components to interact with the server API with 
 
 | Package | Description |
 |---------|-------------|
-| `@deessejs/drpc` | Server-side API definitions |
-| `@deessejs/drpc/react` | React hooks for client-side usage |
-| `@deessejs/drpc-next` | Next.js integration utilities |
+| `@deessejs/server` | Server-side API definitions |
+| `@deessejs/server/react` | React hooks for client-side usage |
+| `@deessejs/server-next` | Next.js integration utilities |
 
 ## Architecture
 
@@ -52,7 +52,7 @@ The client system enables React components to interact with the server API with 
 
 ```typescript
 // server/api.ts
-import { defineContext, createAPI, createPublicAPI } from "@deessejs/drpc"
+import { defineContext, createAPI, createPublicAPI } from "@deessejs/server"
 import { z } from "zod"
 
 const { t, createAPI } = defineContext({
@@ -143,7 +143,7 @@ async function UserList() {
 
 ```typescript
 // app/api/[...slug]/route.ts
-import { createRouteHandler } from "@deessejs/drpc-next"
+import { createRouteHandler } from "@deessejs/server-next"
 import { client } from "@/server/api"
 
 export const POST = createRouteHandler(client)
@@ -165,7 +165,7 @@ const result = await response.json()
 Install the React package:
 
 ```bash
-pnpm add @deessejs/drpc/react
+pnpm add @deessejs/server/react
 ```
 
 ### QueryClientProvider
@@ -173,7 +173,7 @@ pnpm add @deessejs/drpc/react
 ```tsx
 // app/providers.tsx
 "use client"
-import { QueryClientProvider } from "@deessejs/drpc/react"
+import { QueryClientProvider } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 const queryClient = new QueryClient()
@@ -190,7 +190,7 @@ export function Providers({ children }) {
 ### useQuery
 
 ```typescript
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 
 function UserProfile({ userId }: { userId: number }) {
   const { data, isLoading, isError, error, refetch } = useQuery(
@@ -231,7 +231,7 @@ function UserProfile({ userId }: { userId: number }) {
 ### useMutation
 
 ```typescript
-import { useMutation } from "@deessejs/drpc/react"
+import { useMutation } from "@deessejs/server/react"
 
 function CreateUserForm() {
   const { mutate, mutateAsync, isLoading, isError, error, data } = useMutation(
@@ -338,7 +338,7 @@ const createUser = t.mutation({
 ### Manual Cache Manipulation
 
 ```typescript
-import { useQueryClient } from "@deessejs/drpc/react"
+import { useQueryClient } from "@deessejs/server/react"
 
 function UpdateUserButton({ userId, name }) {
   const queryClient = useQueryClient()
@@ -360,7 +360,7 @@ function UpdateUserButton({ userId, name }) {
 
 ```typescript
 // app/users/page.tsx (Server Component)
-import { dehydrate, HydrationBoundary } from "@deessejs/drpc/react"
+import { dehydrate, HydrationBoundary } from "@deessejs/server/react"
 import { api } from "@/server/api"
 import { UserList } from "./UserList"
 
@@ -385,7 +385,7 @@ export default async function UsersPage() {
 ```typescript
 // components/TaskList.tsx
 "use client"
-import { clientComponent } from "@deessejs/drpc-next"
+import { clientComponent } from "@deessejs/server-next"
 
 export const TaskList = clientComponent({
   query: api.tasks.list,

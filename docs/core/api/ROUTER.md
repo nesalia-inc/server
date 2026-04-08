@@ -109,7 +109,7 @@ t.router({
 ### Complete Example
 
 ```typescript
-import { defineContext, createAPI } from "@deessejs/drpc"
+import { defineContext, createAPI } from "@deessejs/server"
 import { z } from "zod"
 
 const { t, createAPI } = defineContext({
@@ -209,7 +209,7 @@ t.router({
 When you create a client with `createPublicAPI()` or `createClient()`, internal operations are automatically filtered out:
 
 ```typescript
-import { createClient } from "@deessejs/drpc"
+import { createClient } from "@deessejs/server"
 
 const client = createClient(api)
 

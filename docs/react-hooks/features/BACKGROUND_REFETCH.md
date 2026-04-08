@@ -26,7 +26,7 @@ useQuery({
 })
 ```
 
-## Proposed @deessejs/drpc/react Implementation
+## Proposed @deessejs/server/react Implementation
 
 ### Basic Options
 
@@ -208,7 +208,7 @@ const { data } = useQuery(client.posts.list, {
 ### Focus Manager (Custom Implementation)
 
 ```typescript
-import { focusManager } from "@deessejs/drpc/react"
+import { focusManager } from "@deessejs/server/react"
 
 // Custom focus handling
 focusManager.setEventListener((handleFocus) => {
@@ -228,7 +228,7 @@ const isFocused = focusManager.isFocused()
 ### Online Manager (Custom Implementation)
 
 ```typescript
-import { onlineManager } from "@deessejs/drpc/react"
+import { onlineManager } from "@deessejs/server/react"
 
 // Custom online handling
 onlineManager.setEventListener((handleOnline) => {

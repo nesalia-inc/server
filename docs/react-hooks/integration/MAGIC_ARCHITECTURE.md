@@ -458,7 +458,7 @@ export type { QueryDefinition, MutationDefinition, CacheKey } from './types'
 ```typescript
 // app/providers.tsx
 "use client"
-import { QueryClientProvider } from "@deessejs/drpc/react"
+import { QueryClientProvider } from "@deessejs/server/react"
 import { client } from "./api"
 
 export function Providers({ children }) {
@@ -475,7 +475,7 @@ export function Providers({ children }) {
 ```typescript
 // components/UserList.tsx
 "use client"
-import { useMagicQuery, useMagicMutation } from "@deessejs/drpc/react/magic"
+import { useMagicQuery, useMagicMutation } from "@deessejs/server/react/magic"
 import { client } from "./api"
 
 export function UserList() {

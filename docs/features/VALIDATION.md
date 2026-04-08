@@ -6,7 +6,7 @@ The validation system supports multiple validation libraries (Zod, Valibot, ArkT
 
 ## Zero-Dependency Core
 
-`@deessejs/drpc` core has **zero validation dependencies**. You choose which library to use:
+`@deessejs/server` core has **zero validation dependencies**. You choose which library to use:
 
 ```typescript
 import { z } from "zod"
@@ -41,7 +41,7 @@ const getUser = t.query({
 
 ```typescript
 import { z } from "zod"
-import { ok } from "@deessejs/drpc"
+import { ok } from "@deessejs/server"
 
 const getUser = t.query({
   args: z.object({

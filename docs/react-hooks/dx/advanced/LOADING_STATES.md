@@ -22,7 +22,7 @@ const getConfig = t.query({
 ```tsx
 // Settings.tsx
 "use client"
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function Settings() {

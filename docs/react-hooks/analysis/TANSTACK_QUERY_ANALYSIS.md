@@ -1,12 +1,12 @@
 # TanStack Query Analysis
 
-This document analyzes TanStack Query (react-query) features and identifies potential improvements for `@deessejs/drpc/react`.
+This document analyzes TanStack Query (react-query) features and identifies potential improvements for `@deessejs/server/react`.
 
 ## TanStack Query Features Overview
 
 ### Query Features
 
-| Feature | TanStack Query | @deessejs/drpc/react |
+| Feature | TanStack Query | @deessejs/server/react |
 |---------|---------------|----------------------|
 | Basic useQuery | ✅ | ✅ |
 | Infinite queries | ✅ | ❌ |
@@ -25,7 +25,7 @@ This document analyzes TanStack Query (react-query) features and identifies pote
 
 ### Mutation Features
 
-| Feature | TanStack Query | @deessejs/drpc/react |
+| Feature | TanStack Query | @deessejs/server/react |
 |---------|---------------|----------------------|
 | Basic useMutation | ✅ | ✅ |
 | Optimistic updates | ✅ | ⚠️ Manual |
@@ -37,7 +37,7 @@ This document analyzes TanStack Query (react-query) features and identifies pote
 
 ### Cache Features
 
-| Feature | TanStack Query | @deessejs/drpc/react |
+| Feature | TanStack Query | @deessejs/server/react |
 |---------|---------------|----------------------|
 | Query cache | ✅ | ✅ |
 | Mutation cache | ✅ | ❌ |
@@ -48,7 +48,7 @@ This document analyzes TanStack Query (react-query) features and identifies pote
 
 ### Developer Experience
 
-| Feature | TanStack Query | @deessejs/drpc/react |
+| Feature | TanStack Query | @deessejs/server/react |
 |---------|---------------|----------------------|
 | DevTools | ✅ | ❌ |
 | Error boundaries | ✅ | ❌ |
@@ -71,7 +71,7 @@ const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add infinite query support with cursor-based pagination
 
 ---
@@ -97,7 +97,7 @@ mutationState.forEach((state) => {
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add useMutationState for tracking multiple mutations
 
 ---
@@ -133,7 +133,7 @@ useMutation({
 })
 ```
 
-**@deessejs/drpc/react**: Manual via useQueryClient
+**@deessejs/server/react**: Manual via useQueryClient
 **Improvement**: Add built-in optimistic update helpers
 
 ---
@@ -153,7 +153,7 @@ useQuery({
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add AbortSignal support
 
 ---
@@ -176,7 +176,7 @@ useQuery({
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add refetch options
 
 ---
@@ -194,7 +194,7 @@ useQuery({
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add placeholder data support
 
 ---
@@ -219,7 +219,7 @@ persistQueryClient({
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add cache persistence
 
 ---
@@ -241,7 +241,7 @@ function App() {
 }
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Build DevTools
 
 ---
@@ -256,7 +256,7 @@ useQuery({ queryKey: ['posts', 1] })
 useQuery({ queryKey: ['posts', 1] }) // Uses cached result
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add request deduplication
 
 ---
@@ -277,7 +277,7 @@ useQuery({
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add retry options
 
 ---
@@ -294,7 +294,7 @@ useSuspenseQuery({
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add suspense support
 
 ---
@@ -315,7 +315,7 @@ const state = useMutationState({
 })
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add mutation keys
 
 ---
@@ -336,7 +336,7 @@ useQuery({ queryKey: queryKeys.post(1) })
 useQuery({ queryKey: queryKeys.posts({ status: 'published' }) })
 ```
 
-**@deessejs/drpc/react**: Use defineCacheKeys
+**@deessejs/server/react**: Use defineCacheKeys
 **Status**: Already available (better type safety)
 
 ---
@@ -364,7 +364,7 @@ function App() {
 }
 ```
 
-**@deessejs/drpc/react**: Not implemented
+**@deessejs/server/react**: Not implemented
 **Improvement**: Add error boundary integration
 
 ---
@@ -399,7 +399,7 @@ function App() {
 User Action → Query Key → Query Cache → Fetch → Update Cache → Notify
 ```
 
-### @deessejs/drpc/react Flow
+### @deessejs/server/react Flow
 
 ```
 Server Query → Returns Keys → Client Cache → Auto-invalidate on Mutation
@@ -409,6 +409,6 @@ Server Query → Returns Keys → Client Cache → Auto-invalidate on Mutation
 
 TanStack Query is **client-driven** - the client decides what to fetch and when to invalidate.
 
-@deessejs/drpc/react is **server-driven** - the server defines cache keys and invalidation, client just follows.
+@deessejs/server/react is **server-driven** - the server defines cache keys and invalidation, client just follows.
 
-This is actually an advantage for @deessejs/drpc/react as it simplifies the API but limits some advanced use cases.
+This is actually an advantage for @deessejs/server/react as it simplifies the API but limits some advanced use cases.

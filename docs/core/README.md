@@ -1,6 +1,6 @@
 # Core Documentation
 
-This folder contains the core documentation for `@deessejs/drpc`.
+This folder contains the core documentation for `@deessejs/server`.
 
 ## Structure
 
@@ -27,7 +27,7 @@ This folder contains the core documentation for `@deessejs/drpc`.
 ## Example
 
 ```typescript
-import { defineContext } from "@deessejs/drpc"
+import { defineContext } from "@deessejs/server"
 import { z } from "zod"
 
 const { t, createAPI } = defineContext({

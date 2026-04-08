@@ -2,7 +2,7 @@
 
 ## Overview
 
-`@deessejs/drpc-next` provides a security model that separates public operations from server-only internal operations.
+`@deessejs/server-next` provides a security model that separates public operations from server-only internal operations.
 
 ## Security Model
 

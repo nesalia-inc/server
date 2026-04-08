@@ -1,6 +1,6 @@
 # Developer Experience (DX)
 
-This folder contains examples showing how developers would use `@deessejs/drpc/react` in real applications.
+This folder contains examples showing how developers would use `@deessejs/server/react` in real applications.
 
 ## Files
 

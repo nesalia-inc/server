@@ -1,6 +1,6 @@
-# @deessejs/drpc Documentation
+# @deessejs/server Documentation
 
-`@deessejs/drpc` is a **modern functional-first RPC protocol** implementation. It provides type-safe remote procedure calls with a clean, composable API designed for performance and developer experience.
+`@deessejs/server` is a **modern functional-first RPC protocol** implementation. It provides type-safe remote procedure calls with a clean, composable API designed for performance and developer experience.
 
 ## Philosophy
 
@@ -53,7 +53,7 @@ This ensures sensitive operations (admin actions, privileged mutations) remain p
 │   └─────────────────────┘         └─────────────────────┘      │
 │                                                                 │
 │   ┌─────────────────────────────────────────────────────────┐   │
-│   │                   @deessejs/drpc                       │   │
+│   │                   @deessejs/server                       │   │
 │   │                                                         │   │
 │   │   query() ──────────────► Exposed via HTTP             │   │
 │   │   mutation() ───────────► Exposed via HTTP              │   │
@@ -84,15 +84,15 @@ This ensures sensitive operations (admin actions, privileged mutations) remain p
 | Package | Description |
 |---------|-------------|
 | `@deessejs/core` | Core types (`Result`, `ok()`, `err()`) |
-| `@deessejs/drpc` | This package: functional RPC definitions |
-| `@deessejs/drpc/react` | React hooks integration |
+| `@deessejs/server` | This package: functional RPC definitions |
+| `@deessejs/server/react` | React hooks integration |
 
 ## Quick Start
 
 ### Define Context
 
 ```typescript
-import { defineContext } from "@deessejs/drpc"
+import { defineContext } from "@deessejs/server"
 import { authPlugin } from "./plugins/auth"
 import { cachePlugin } from "./plugins/cache"
 
@@ -110,7 +110,7 @@ const { t, createAPI } = defineContext({
 ```typescript
 import { z } from "zod"
 import { ok, err } from "@deessejs/core"
-import { withMetadata } from "@deessejs/drpc"
+import { withMetadata } from "@deessejs/server"
 import { keys } from "./cache/keys"
 
 const getUser = t.query({
@@ -132,7 +132,7 @@ const getUser = t.query({
 ```typescript
 import { z } from "zod"
 import { ok } from "@deessejs/core"
-import { withMetadata } from "@deessejs/drpc"
+import { withMetadata } from "@deessejs/server"
 import { keys } from "./cache/keys"
 
 const createUser = t.mutation({
@@ -204,7 +204,7 @@ export { api }
 Create a separate API that only exposes public operations. This provides TypeScript safety to prevent calling internal operations from client code:
 
 ```typescript
-import { createPublicAPI } from "@deessejs/drpc"
+import { createPublicAPI } from "@deessejs/server"
 
 // Creates a client-safe API with only query and mutation
 const client = createPublicAPI(api)
@@ -261,7 +261,7 @@ Create a route handler to expose only public operations via HTTP:
 
 ```typescript
 // app/(deesse)/api/[...slug]/route.ts
-import { createRouteHandler } from "@deessejs/drpc-next"
+import { createRouteHandler } from "@deessejs/server-next"
 import { api, client } from "@/server/api"
 
 export const POST = createRouteHandler(client)
@@ -274,8 +274,8 @@ This creates an HTTP endpoint that only exposes `query` and `mutation` operation
 You can combine multiple route handlers in the same route group:
 
 ```typescript
-// app/(deesse)/api/[...slug]/route.ts - @deessejs/drpc
-import { createRouteHandler } from "@deessejs/drpc-next"
+// app/(deesse)/api/[...slug]/route.ts - @deessejs/server
+import { createRouteHandler } from "@deessejs/server-next"
 import { client } from "@/server/api"
 
 export const POST = createRouteHandler(client)
@@ -317,7 +317,7 @@ const stats = await api.users.getAdminStats({}) // Works - internal
 ```typescript
 import { z } from "zod"
 import { ok } from "@deessejs/core"
-import { withMetadata } from "@deessejs/drpc"
+import { withMetadata } from "@deessejs/server"
 
 const createUser = t.mutation({
   args: z.object({
@@ -349,7 +349,7 @@ Plugins extend the context with additional properties:
 
 ```typescript
 // plugins/auth.ts
-import { plugin } from "@deessejs/drpc"
+import { plugin } from "@deessejs/server"
 
 export const authPlugin = plugin({
   name: "auth",
@@ -368,10 +368,10 @@ const { t, createAPI } = defineContext({
 
 ## React Integration
 
-See [integration/REACT_HOOKS.md](integration/REACT_HOOKS.md) for the `@deessejs/drpc/react` package.
+See [integration/REACT_HOOKS.md](integration/REACT_HOOKS.md) for the `@deessejs/server/react` package.
 
 ```typescript
-import { useQuery, useMutation } from "@deessejs/drpc/react"
+import { useQuery, useMutation } from "@deessejs/server/react"
 
 function UserList() {
   const { data } = useQuery(api.users.list, { args: { limit: 10 } })
@@ -419,7 +419,7 @@ function CreateUserForm() {
 ## Installation
 
 ```bash
-pnpm add @deessejs/drpc @deessejs/core
+pnpm add @deessejs/server @deessejs/core
 # or
-npm install @deessejs/drpc @deessejs/core
+npm install @deessejs/server @deessejs/core
 ```

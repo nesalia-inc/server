@@ -1,12 +1,12 @@
 # Setup Guide
 
-Complete guide to setting up `@deessejs/drpc` with Next.js.
+Complete guide to setting up `@deessejs/server` with Next.js.
 
 ## 1. Define Your API
 
 ```typescript
 // server/drpc.ts
-import { defineContext, createAPI, createClient } from "@deessejs/drpc"
+import { defineContext, createAPI, createClient } from "@deessejs/server"
 import { ok, err } from "@deessejs/core"
 import { z } from "zod"
 
@@ -141,7 +141,7 @@ export const client = createClient(drpc)
 ```typescript
 // app/api/drpc/[...slug]/route.ts - Catch-all route
 import { client } from "@/server/drpc"
-import { toNextJsHandler } from "@deessejs/drpc-next"
+import { toNextJsHandler } from "@deessejs/server-next"
 
 export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
 ```

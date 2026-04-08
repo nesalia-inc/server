@@ -2,7 +2,7 @@
 
 ## Overview
 
-The plugin system in `@deessejs/drpc` allows extending the context (`ctx`) with additional properties **and** adding API routes. Plugins are a way to add reusable functionality across your application.
+The plugin system in `@deessejs/server` allows extending the context (`ctx`) with additional properties **and** adding API routes. Plugins are a way to add reusable functionality across your application.
 
 ## Plugin Capabilities
 
@@ -58,7 +58,7 @@ Plugins can be configured with options using factory functions:
 
 ```typescript
 // plugins/notifications.ts
-import { Plugin } from "@deessejs/drpc"
+import { Plugin } from "@deessejs/server"
 
 type NotificationOptions = {
   retryCount?: number
@@ -277,7 +277,7 @@ This ensures:
 
 ```typescript
 // plugins/auth.ts
-import { Plugin } from "@deessejs/drpc"
+import { Plugin } from "@deessejs/server"
 
 type AuthContext = {
   userId: string | null
@@ -298,7 +298,7 @@ export const authPlugin = plugin<AuthContext>({
 
 ```typescript
 // plugins/cache.ts
-import { Plugin } from "@deessejs/drpc"
+import { Plugin } from "@deessejs/server"
 
 type CacheContext = {
   cache: {
@@ -346,7 +346,7 @@ export const cachePlugin = plugin<CacheContext>({
 
 ```typescript
 // plugins/logger.ts
-import { Plugin } from "@deessejs/drpc"
+import { Plugin } from "@deessejs/server"
 
 type LoggerContext = {
   logger: {
@@ -372,7 +372,7 @@ export const loggerPlugin = plugin<LoggerContext>({
 ### Using Multiple Plugins
 
 ```typescript
-import { defineContext, plugin } from "@deessejs/drpc"
+import { defineContext, plugin } from "@deessejs/server"
 import { authPlugin } from "./plugins/auth"
 import { cachePlugin } from "./plugins/cache"
 import { loggerPlugin } from "./plugins/logger"
@@ -452,7 +452,7 @@ const getUser = t.query({
 
 ```typescript
 // plugins/session.ts
-import { Plugin } from "@deessejs/drpc"
+import { Plugin } from "@deessejs/server"
 
 type SessionContext = {
   session: {
@@ -484,7 +484,7 @@ Plugins can also add queries and mutations to the API router:
 
 ```typescript
 // plugins/notifications.ts
-import { Plugin, ok } from "@deessejs/drpc"
+import { Plugin, ok } from "@deessejs/server"
 
 type NotificationContext = {
   db: Database
@@ -616,7 +616,7 @@ export const analyticsPlugin = plugin<Ctx, AnalyticsRouter>({
 ### Extending Context Types
 
 ```typescript
-import { plugin } from "@deessejs/drpc"
+import { plugin } from "@deessejs/server"
 
 // Define your full context type
 type MyContext = {
@@ -789,12 +789,12 @@ Plugins can be packaged and published to NPM for reuse across projects:
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "peerDependencies": {
-    "@deessejs/drpc": ">=1.0.0"
+    "@deessejs/server": ">=1.0.0"
   }
 }
 
 // src/index.ts
-import { plugin } from "@deessejs/drpc"
+import { plugin } from "@deessejs/server"
 
 type LoggerContext = {
   logger: {
@@ -819,7 +819,7 @@ export const loggerPlugin = plugin<LoggerContext>({
 For maximum compatibility, use `any` as the context type to work with any project:
 
 ```typescript
-import { plugin } from "@deessejs/drpc"
+import { plugin } from "@deessejs/server"
 
 // Works with any project regardless of context type
 export const genericLoggerPlugin = plugin<any>({

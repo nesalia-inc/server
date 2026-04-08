@@ -2,7 +2,7 @@
 
 ## Overview
 
-`@deessejs/drpc/react` provides React hooks (`useQuery`, `useMutation`) that enable simple real-time synchronization from server to client for the local user.
+`@deessejs/server/react` provides React hooks (`useQuery`, `useMutation`) that enable simple real-time synchronization from server to client for the local user.
 
 ## Core Concept
 
@@ -61,7 +61,7 @@ function useQuery<Args, Success, CauseData>(
 ): UseQueryResult<Success>
 ```
 
-**Note:** The cache keys are defined in the query definition (see `@deessejs/drpc` SPEC.md). The hook automatically extracts and manages these keys.
+**Note:** The cache keys are defined in the query definition (see `@deessejs/server` SPEC.md). The hook automatically extracts and manages these keys.
 
 ### useMutation
 
@@ -90,7 +90,7 @@ function useMutation<Args, Success, CauseData>(
 
 ### Key Format
 
-Keys are defined in `@deessejs/drpc` and consumed by `@deessejs/drpc/react`:
+Keys are defined in `@deessejs/server` and consumed by `@deessejs/server/react`:
 
 ```typescript
 // Simple key
@@ -104,10 +104,10 @@ Keys are defined in `@deessejs/drpc` and consumed by `@deessejs/drpc/react`:
 ["users", "detail", 1]
 ```
 
-### Query Keys (defined in @deessejs/drpc)
+### Query Keys (defined in @deessejs/server)
 
 ```typescript
-// In @deessejs/drpc - define keys in the query
+// In @deessejs/server - define keys in the query
 const getUser = t.query({
   args: z.object({ id: z.number() }),
   handler: async (ctx, args) => {
@@ -129,10 +129,10 @@ const listUsers = t.query({
 })
 ```
 
-### Mutation Invalidate Keys (defined in @deessejs/drpc)
+### Mutation Invalidate Keys (defined in @deessejs/server)
 
 ```typescript
-// In @deessejs/drpc - define invalidate in the mutation
+// In @deessejs/server - define invalidate in the mutation
 const createUser = t.mutation({
   args: z.object({ name: z.string(), email: z.string() }),
   handler: async (ctx, args) => {
@@ -169,7 +169,7 @@ const deleteUser = t.mutation({
 ### Basic Query
 
 ```typescript
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 
 function UserProfile({ userId }: { userId: number }) {
   const { data, isLoading, error } = useQuery(api.users.get, {
@@ -186,7 +186,7 @@ function UserProfile({ userId }: { userId: number }) {
 ### Query with Automatic Caching
 
 ```typescript
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 
 function UserList() {
   const { data, isLoading } = useQuery(api.users.list, {
@@ -205,7 +205,7 @@ function UserList() {
 ### Mutation with Automatic Invalidation
 
 ```typescript
-import { useMutation } from "@deessejs/drpc/react"
+import { useMutation } from "@deessejs/server/react"
 
 function CreateUserForm() {
   const { mutate, isLoading } = useMutation(api.users.create)
@@ -227,7 +227,7 @@ function CreateUserForm() {
 ### Optimistic Updates
 
 ```typescript
-import { useMutation, useQueryClient } from "@deessejs/drpc/react"
+import { useMutation, useQueryClient } from "@deessejs/server/react"
 
 function UpdateUserButton({ userId, name }: { userId: number; name: string }) {
   const queryClient = useQueryClient()
@@ -283,7 +283,7 @@ function RefreshableUserList() {
 ### Mutation with Rollback
 
 ```typescript
-import { useMutation, useQueryClient } from "@deessejs/drpc/react"
+import { useMutation, useQueryClient } from "@deessejs/server/react"
 
 function UpdateUserForm({ userId }: { userId: number }) {
   const queryClient = useQueryClient()
@@ -383,7 +383,7 @@ const createOrder = t.mutation({
 ### Prefetching
 
 ```typescript
-import { useQueryClient } from "@deessejs/drpc/react"
+import { useQueryClient } from "@deessejs/server/react"
 
 function UserButton({ userId }: { userId: number }) {
   const queryClient = useQueryClient()
@@ -404,7 +404,7 @@ function UserButton({ userId }: { userId: number }) {
 ### Query Client Provider
 
 ```tsx
-import { QueryClient, QueryClientProvider } from "@deessejs/drpc/react"
+import { QueryClient, QueryClientProvider } from "@deessejs/server/react"
 import { api } from "./api"
 
 const queryClient = new QueryClient({
@@ -429,7 +429,7 @@ function App() {
 ### Custom Cache Implementation
 
 ```typescript
-import { createQueryClient } from "@deessejs/drpc/react"
+import { createQueryClient } from "@deessejs/server/react"
 
 const queryClient = createQueryClient({
   // Custom storage (e.g., IndexedDB, Redis)
@@ -507,7 +507,7 @@ function CreateUserForm() {
 
 ```typescript
 // app/users/page.tsx
-import { dehydrate, HydrationBoundary } from "@deessejs/drpc/react"
+import { dehydrate, HydrationBoundary } from "@deessejs/server/react"
 import { api } from "@/api"
 
 export default async function UsersPage() {

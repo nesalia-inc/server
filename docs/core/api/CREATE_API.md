@@ -53,7 +53,7 @@ function createPublicAPI<Ctx, TRoutes extends Router>(
 ### Example
 
 ```typescript
-import { createPublicAPI } from "@deessejs/drpc"
+import { createPublicAPI } from "@deessejs/server"
 
 // Full API for server usage (all operations)
 const api = createAPI({
@@ -115,7 +115,7 @@ function createClient<Ctx, TRoutes extends Router>(
 ### Example
 
 ```typescript
-import { createClient } from "@deessejs/drpc"
+import { createClient } from "@deessejs/server"
 
 const client = createClient(api)
 
@@ -142,7 +142,7 @@ function createLocalExecutor<Ctx, TRoutes extends Router>(
 ### Example
 
 ```typescript
-import { createLocalExecutor } from "@deessejs/drpc"
+import { createLocalExecutor } from "@deessejs/server"
 
 const executor = createLocalExecutor(api)
 
@@ -209,7 +209,7 @@ const result = await api.users.get({ id: 1 })
 
 ```typescript
 // server/drpc.ts
-import { defineContext, createAPI, createPublicAPI } from "@deessejs/drpc"
+import { defineContext, createAPI, createPublicAPI } from "@deessejs/server"
 
 const { t, createAPI } = defineContext({
   context: {
@@ -256,12 +256,12 @@ export { api, client }
 
 ## Next.js Integration
 
-For HTTP exposure in Next.js, use `@deessejs/drpc-next`:
+For HTTP exposure in Next.js, use `@deessejs/server-next`:
 
 ```typescript
 // app/api/[...slug]/route.ts
 import { client } from "@/server/drpc"
-import { toNextJsHandler } from "@deessejs/drpc-next"
+import { toNextJsHandler } from "@deessejs/server-next"
 
 export const { POST, GET } = toNextJsHandler(client)
 ```

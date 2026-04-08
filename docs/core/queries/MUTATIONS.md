@@ -1,6 +1,6 @@
 # Mutations
 
-Mutations are write operations in `@deessejs/drpc`. They are used to modify data on your server. Mutations can be either:
+Mutations are write operations in `@deessejs/server`. They are used to modify data on your server. Mutations can be either:
 
 - **Public** (`t.mutation()`) - Exposed via HTTP, callable from client and server
 - **Internal** (`t.internalMutation()`) - Only callable from server-side code
@@ -12,7 +12,7 @@ Mutations follow the same patterns as queries but are used for creating, updatin
 ## Basic Mutation Definition
 
 ```typescript
-import { defineContext } from "@deessejs/drpc"
+import { defineContext } from "@deessejs/server"
 import { ok, err } from "@deessejs/core"
 import { z } from "zod"
 

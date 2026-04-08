@@ -33,7 +33,7 @@ const getUserPosts = t.query({
 ```tsx
 // UserProfile.tsx
 "use client"
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function UserProfile({ userId }: { userId: number }) {

@@ -25,7 +25,7 @@ An event definition object that can be used in `defineEvents()`.
 ## Example
 
 ```typescript
-import { defineContext, event } from "@deessejs/drpc"
+import { defineContext, event } from "@deessejs/server"
 import { z } from "zod"
 
 // Define events using the event() helper

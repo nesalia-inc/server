@@ -9,7 +9,7 @@ Public queries are the standard way to define read operations that need to be ac
 ## Basic Definition
 
 ```typescript
-import { defineContext } from "@deessejs/drpc"
+import { defineContext } from "@deessejs/server"
 import { ok, err } from "@deessejs/core"
 import { z } from "zod"
 
@@ -194,7 +194,7 @@ const getUser = t.query({
 Return cache keys to enable automatic cache invalidation:
 
 ```typescript
-import { withMetadata } from "@deessejs/drpc"
+import { withMetadata } from "@deessejs/server"
 
 handler: async (ctx, args) => {
   const user = await ctx.db.users.find(args.id)

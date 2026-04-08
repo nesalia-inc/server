@@ -1,6 +1,6 @@
 {
-  "name": "@deessejs/drpc",
-  "version": "0.0.1",
+  "name": "@deessejs/server",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -11,30 +11,21 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nesalia-inc/server.git"
-  },
-  "bugs": {
-    "email": "support@nesalia.com"
-  },
   "scripts": {
-    "test": "vitest",
-    "test:run": "vitest run",
-    "coverage": "vitest run --coverage",
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/"
+    "test": "vitest run",
+    "test:run": "vitest run --coverage",
+    "clean": "rm -rf dist"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "@vitest/coverage-v8": "^2.1.0",
-    "typescript": "^5.7.0",
-    "typescript-eslint": "^8.18.0",
-    "vitest": "^2.1.0",
-    "zod": "^3.0.0"
-  },
-  "peerDependencies": {
-    "@deessejs/core": "workspace:*",
-    "zod": "^3.0.0"
+    "@vitest/coverage-v8": "^2.0.0",
+    "eslint": "^9.17.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.15.0",
+    "vitest": "^2.0.0"
   }
 }

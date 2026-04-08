@@ -2,7 +2,7 @@
 
 ## Overview
 
-Queries are read operations in `@deessejs/drpc`. They are used to fetch data from your data sources. Queries can be either:
+Queries are read operations in `@deessejs/server`. They are used to fetch data from your data sources. Queries can be either:
 
 - **Public** (`t.query()`) - Exposed via HTTP, callable from client and server
 - **Internal** (`t.internalQuery()`) - Only callable from server-side code
@@ -10,7 +10,7 @@ Queries are read operations in `@deessejs/drpc`. They are used to fetch data fro
 ## Basic Query Definition
 
 ```typescript
-import { defineContext } from "@deessejs/drpc"
+import { defineContext } from "@deessejs/server"
 import { ok, err } from "@deessejs/core"
 import { z } from "zod"
 
@@ -113,7 +113,7 @@ handler: async (ctx, args) => {
 Queries can return cache keys to enable automatic cache invalidation:
 
 ```typescript
-import { withMetadata } from "@deessejs/drpc"
+import { withMetadata } from "@deessejs/server"
 
 handler: async (ctx, args) => {
   const user = await ctx.db.users.find(args.id)
@@ -152,7 +152,7 @@ Queries support lifecycle hooks:
 
 ```typescript
 import { z } from "zod"
-import { withMetadata } from "@deessejs/drpc"
+import { withMetadata } from "@deessejs/server"
 
 const getUser = t.query({
   args: z.object({
@@ -464,7 +464,7 @@ handler: async (ctx, args) => {
 
 ```typescript
 import { err } from "@deessejs/core"
-import { withMetadata } from "@deessejs/drpc"
+import { withMetadata } from "@deessejs/server"
 import { z } from "zod"
 
 // Good: Explicit error handling with cache keys

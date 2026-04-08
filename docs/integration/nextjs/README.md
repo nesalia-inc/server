@@ -1,12 +1,12 @@
 # Next.js Integration
 
-`@deessejs/drpc-next` provides Next.js integration for `@deessejs/drpc`.
+`@deessejs/server-next` provides Next.js integration for `@deessejs/server`.
 
 ## Overview
 
 - HTTP exposure of public queries and mutations via route handlers
 - Type-safe RPC calls between client and server
-- Automatic cache revalidation across components (with `@deessejs/drpc/react`)
+- Automatic cache revalidation across components (with `@deessejs/server/react`)
 
 ## Quick Start
 
@@ -14,7 +14,7 @@
 
 ```typescript
 // server/drpc.ts
-import { defineContext, createAPI, createClient } from "@deessejs/drpc"
+import { defineContext, createAPI, createClient } from "@deessejs/server"
 import { ok, err } from "@deessejs/core"
 import { z } from "zod"
 
@@ -42,7 +42,7 @@ export const client = createClient(drpc)
 ```typescript
 // app/api/drpc/[...slug]/route.ts - Catch-all route for procedure calls
 import { client } from "@/server/drpc"
-import { toNextJsHandler } from "@deessejs/drpc-next"
+import { toNextJsHandler } from "@deessejs/server-next"
 
 export const { GET, POST, PUT, PATCH, DELETE } = toNextJsHandler(client)
 ```
@@ -99,7 +99,7 @@ The handler automatically:
                                   │
                                   ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│                     @deessejs/drpc                                   │
+│                     @deessejs/server                                   │
 │                                                                      │
 │  createAPI() ──────► drpc ──────► Full API (all operations)        │
 │                            │                                        │

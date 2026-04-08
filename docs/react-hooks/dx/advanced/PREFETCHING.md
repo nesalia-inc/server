@@ -7,7 +7,7 @@ Load data before it's needed for instant display.
 ```tsx
 // UserCard.tsx
 "use client"
-import { useQueryClient } from "@deessejs/drpc/react"
+import { useQueryClient } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function UserCard({ userId }: { userId: number }) {
@@ -37,7 +37,7 @@ export function UserCard({ userId }: { userId: number }) {
 ```tsx
 // Dashboard.tsx
 "use client"
-import { useQueryClient } from "@deessejs/drpc/react"
+import { useQueryClient } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function Dashboard() {
@@ -64,8 +64,8 @@ export function Dashboard() {
 
 ```tsx
 // app/layout.tsx
-import { dehydrate } from "@deessejs/drpc/react"
-import { HydrationBoundary } from "@deessejs/drpc/react"
+import { dehydrate } from "@deessejs/server/react"
+import { HydrationBoundary } from "@deessejs/server/react"
 
 export default async function Layout({ children }) {
   const queryClient = new QueryClient()

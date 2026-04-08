@@ -36,12 +36,12 @@ useMutation({
 })
 ```
 
-## Proposed @deessejs/drpc/react Implementation
+## Proposed @deessejs/server/react Implementation
 
 ### Option 1: Built-in Optimistic Helper
 
 ```typescript
-import { useMutation, useQueryClient } from "@deessejs/drpc/react"
+import { useMutation, useQueryClient } from "@deessejs/server/react"
 
 function UpdatePostButton({ postId, title }) {
   const queryClient = useQueryClient()
@@ -65,7 +65,7 @@ function UpdatePostButton({ postId, title }) {
 ### Option 2: Manual with useQueryClient
 
 ```typescript
-import { useMutation, useQueryClient } from "@deessejs/drpc/react"
+import { useMutation, useQueryClient } from "@deessejs/server/react"
 
 function UpdatePostForm({ postId }) {
   const queryClient = useQueryClient()

@@ -41,7 +41,7 @@ export function UserList() {
 
 ```tsx
 // components/UserList.tsx
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function UserList() {
@@ -106,7 +106,7 @@ export function CreateUserForm() {
 
 ```tsx
 // components/CreateUser.tsx
-import { useMutation } from "@deessejs/drpc/react"
+import { useMutation } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function CreateUserForm() {
@@ -161,7 +161,7 @@ export function EditUserButton({ userId }: { userId: number }) {
 
 ```tsx
 // components/EditUser.tsx
-import { useMutation } from "@deessejs/drpc/react"
+import { useMutation } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function EditUserButton({ userId }: { userId: number }) {
@@ -231,7 +231,7 @@ export function UserPosts({ userId }: { userId: number }) {
 
 ```tsx
 // components/UserPosts.tsx
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function UserPosts({ userId }: { userId: number }) {
@@ -284,7 +284,7 @@ export function UserList() {
 
 ```tsx
 // components/UserList.tsx
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 import { client } from "@/server/api"
 import { useState } from "react"
 

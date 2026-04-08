@@ -56,7 +56,7 @@ const [user, posts, comments, notifications, settings] = results
 ### Basic Batching
 
 ```typescript
-import { batch } from "@deessejs/drpc"
+import { batch } from "@deessejs/server"
 
 // Batch multiple queries
 const results = await batch([

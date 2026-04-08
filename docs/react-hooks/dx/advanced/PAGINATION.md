@@ -39,7 +39,7 @@ const listUsers = t.query({
 // UserList.tsx
 "use client"
 import { useState } from "react"
-import { useQuery } from "@deessejs/drpc/react"
+import { useQuery } from "@deessejs/server/react"
 import { client } from "@/server/api"
 
 export function UserList() {

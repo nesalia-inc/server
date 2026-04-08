@@ -1,10 +1,10 @@
 # React Hooks Features
 
-This folder contains analysis and proposed implementations for `@deessejs/drpc/react` features, comparing with TanStack Query.
+This folder contains analysis and proposed implementations for `@deessejs/server/react` features, comparing with TanStack Query.
 
 ## Overview
 
-[`analysis/TANSTACK_QUERY_ANALYSIS.md`](analysis/TANSTACK_QUERY_ANALYSIS.md) provides a comprehensive overview of TanStack Query features and what is currently implemented or missing in `@deessejs/drpc/react`.
+[`analysis/TANSTACK_QUERY_ANALYSIS.md`](analysis/TANSTACK_QUERY_ANALYSIS.md) provides a comprehensive overview of TanStack Query features and what is currently implemented or missing in `@deessejs/server/react`.
 
 ## Directory Structure
 
@@ -123,7 +123,7 @@ Client → Query Key → Fetch → Cache → Notify
     Client decides what to invalidate
 ```
 
-### @deessejs/drpc/react (Server-Driven)
+### @deessejs/server/react (Server-Driven)
 ```
 Server Query → Returns Keys → Client Cache → Auto-invalidate
                               ↑
