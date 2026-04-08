@@ -100,7 +100,7 @@ const api = createAPI({
 });
 
 // 4. Execute
-const result = await api.execute({ id: 1 });
+const result = await api.users.get({ id: 1 });
 ```
 
 ---
@@ -253,16 +253,11 @@ function createAPI<Ctx, TRoutes extends Router>(
   }
 ): APIInstance<Ctx, TRoutes>
 
-interface APIInstance<Ctx, TRoutes extends Router = Router> {
-  router: TRoutes
+// APIInstance exposes routes as properties for direct access
+type APIInstance<Ctx, TRoutes extends Router> = TRoutes & {
   ctx: Ctx
   plugins: Array<Plugin<Ctx>>
   globalMiddleware: Middleware<Ctx>[]
-
-  execute<TRoute extends keyof TRoutes>(
-    route: TRoute,
-    args: any
-  ): Promise<any>
 }
 ```
 
@@ -276,7 +271,7 @@ createPublicAPI(api: APIInstance): PublicAPIInstance
 createClient(api: APIInstance): PublicAPIInstance
 
 // Create executor for testing
-createLocalExecutor(api: APIInstance): (route: string, args: any) => Promise<any>
+createLocalExecutor(api: APIInstance): () => APIInstance
 ```
 
 ### Usage
@@ -290,7 +285,7 @@ const api = createAPI({
 });
 
 // Execute directly
-const result = await api.execute("users.get", { id: 1 });
+const result = await api.users.get({ id: 1 });
 
 // For HTTP server integration
 const handler = api.createHandler();
@@ -428,7 +423,7 @@ const api = createAPI({
 const clientApi = createPublicAPI(api);
 
 // 5. Execute
-const result = await api.execute("users.get", { id: 1 });
+const result = await api.users.get({ id: 1 });
 console.log(result);
 ```
 
