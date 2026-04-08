@@ -17,6 +17,7 @@
     "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:run": "vitest run --coverage",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
