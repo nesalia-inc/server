@@ -64,6 +64,7 @@ interface MutationProcedure<Ctx, Args, Output> {
 
 ```typescript
 import { query } from "@deessejs/server";
+import { ok, err } from "@deessejs/fp"; // See /deesse-fp for Result patterns
 
 // Context must be explicitly typed
 interface Ctx {
@@ -75,9 +76,9 @@ const getUser = query<Ctx, { id: number }, User>({
   handler: async (ctx, args) => {
     const user = await ctx.db.users.find(args.id);
     if (!user) {
-      throw { code: "NOT_FOUND", message: "User not found" };
+      return err({ code: "NOT_FOUND", message: "User not found" });
     }
-    return user;
+    return ok(user);
   }
 });
 
@@ -92,6 +93,7 @@ const result = await getUser.execute(
 
 ```typescript
 import { query } from "@deessejs/server";
+import { ok, err } from "@deessejs/fp"; // See /deesse-fp for Result patterns
 import { z } from "zod";
 
 const getUser = query({
@@ -138,9 +140,9 @@ const createUser = mutation<Ctx, { name: string; email: string }, User>({
   handler: async (ctx, args) => {
     const existing = await ctx.db.users.findByEmail(args.email);
     if (existing) {
-      throw { code: "CONFLICT", message: "Email already exists" };
+      return err({ code: "CONFLICT", message: "Email already exists" });
     }
-    return await ctx.db.users.create(args);
+    return ok(await ctx.db.users.create(args));
   }
 });
 
@@ -303,14 +305,14 @@ package/server/src/
 ## 9. Dependencies
 
 No new runtime dependencies required. Phase 2 uses:
-- `@deessejs/core` (peer dependency) - for error handling types
+- `@deessejs/fp` (peer dependency) - for error handling types (`Result`, `ok()`, `err()`, etc.) — see `/deesse-fp` skill
 - Existing devDependencies already configured
 
 Schema validation (when added):
 ```json
 {
   "peerDependencies": {
-    "@deessejs/core": "*",
+    "@deessejs/fp": "*",
     "zod": "^3.0.0"
   }
 }

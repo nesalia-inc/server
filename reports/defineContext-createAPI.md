@@ -70,13 +70,14 @@ function defineContext<Ctx, Plugins extends Plugin<Ctx>[]>(
 
 ```typescript
 import { defineContext, t, createAPI } from "@deessejs/server";
+import { ok, err } from "@deessejs/fp"; // See /deesse-fp for Result patterns
 
-// 1. Define context directly (not a factory)
-const ctx = defineContext({
+// 1. Define context - returns { t, createAPI }
+const { t, createAPI } = defineContext({
   context: {
     db: myDatabase,
     logger: console,
-    user: null,  // Will be set per-request
+    userId: null,  // Will be set per-request
   }
 });
 
@@ -173,9 +174,9 @@ const getPost = t.query({
   handler: async (ctx, args) => {
     const post = await ctx.db.posts.find(args.id);
     if (!post) {
-      throw { code: "NOT_FOUND", message: "Post not found" };
+      return err({ code: "NOT_FOUND", message: "Post not found" });
     }
-    return post;
+    return ok(post);
   }
 });
 
@@ -183,10 +184,10 @@ const getPost = t.query({
 const createPost = t.mutation({
   args: z.object({ title: z.string(), content: z.string() }),
   handler: async (ctx, args) => {
-    if (!ctx.user) {
-      throw { code: "UNAUTHORIZED", message: "Must be logged in" };
+    if (!ctx.userId) {
+      return err({ code: "UNAUTHORIZED", message: "Must be logged in" });
     }
-    return await ctx.db.posts.create({ ...args, authorId: ctx.user.id });
+    return ok(await ctx.db.posts.create({ ...args, authorId: ctx.userId }));
   }
 });
 
@@ -381,9 +382,9 @@ const appRouter = t.router({
       handler: async (ctx, args) => {
         const user = await ctx.db.users.find(args.id);
         if (!user) {
-          throw { code: "NOT_FOUND", message: "User not found" };
+          return err({ code: "NOT_FOUND", message: "User not found" });
         }
-        return user;
+        return ok(user);
       }
     }),
     create: t.mutation({
@@ -391,9 +392,9 @@ const appRouter = t.router({
       handler: async (ctx, args) => {
         const existing = await ctx.db.users.findByEmail(args.email);
         if (existing) {
-          throw { code: "CONFLICT", message: "Email already exists" };
+          return err({ code: "CONFLICT", message: "Email already exists" });
         }
-        return await ctx.db.users.create(args);
+        return ok(await ctx.db.users.create(args));
       }
     }),
     delete: t.internalMutation({
@@ -481,7 +482,7 @@ export {
 ## 11. Dependencies
 
 No new runtime dependencies required. Uses:
-- `@deessejs/core` (peer dependency) - for error handling utilities
+- `@deessejs/fp` (peer dependency) - for error handling utilities (`Result`, `ok()`, `err()`, etc.) — see `/deesse-fp` skill
 - Existing devDependencies (vitest, eslint, typescript, typescript-eslint)
 
 Optional (when adding schema validation):
