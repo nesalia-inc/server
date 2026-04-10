@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "deesse-fp": {
+      "source": "nesalia-inc/fp",
+      "sourceType": "github",
+      "computedHash": "2219ac5bb8d204d9b9d6b277cacc319a853a1fbb98ef43600008fe9abf2c47c6"
+    },
     "deessejs-core": {
       "source": "nesalia-inc/core",
       "sourceType": "github",
