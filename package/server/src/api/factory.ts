@@ -215,10 +215,9 @@ export function createPublicAPI<Ctx, TRoutes extends Router<Ctx>>(
 }
 
 // ============================================
-// createClient (alias)
 // ============================================
 
-export { createPublicAPI as createClient };
+
 
 // ============================================
 // createLocalExecutor

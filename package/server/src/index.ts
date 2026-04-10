@@ -4,7 +4,7 @@
 
 // Core functions
 export { defineContext } from "./context/index.js";
-export { createAPI, createPublicAPI, createClient, createLocalExecutor } from "./api/index.js";
+export { createAPI, createPublicAPI, createLocalExecutor } from "./api/index.js";
 export { QueryBuilder } from "./query/index.js";
 
 // Re-export types from @deessejs/fp
