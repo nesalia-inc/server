@@ -157,9 +157,9 @@ export function createPublicAPI<Ctx, TRoutes extends Router<Ctx>>(
   }) as any;
 }
 
-export function createLocalExecutor<Ctx>(
-  api: APIInstance<Ctx>
-): LocalExecutor<Ctx> {
+export function createLocalExecutor(
+  api: APIInstance<unknown>
+): LocalExecutor {
   const events: any[] = [];
   return {
     execute: async (route: string, args: unknown) => {
