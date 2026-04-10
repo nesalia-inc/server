@@ -7,7 +7,7 @@ Complete guide to setting up `@deessejs/server` with Next.js.
 ```typescript
 // server/drpc.ts
 import { defineContext, createAPI, createClient } from "@deessejs/server"
-import { ok, err } from "@deessejs/core"
+import { ok, err } from "@deessejs/fp" // See /deesse-fp for Result patterns
 import { z } from "zod"
 
 const { t, createAPI } = defineContext({
