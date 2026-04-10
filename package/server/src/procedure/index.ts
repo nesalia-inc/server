@@ -1,0 +1,1 @@
+export { withMetadata, type Metadata } from "./types.js";
