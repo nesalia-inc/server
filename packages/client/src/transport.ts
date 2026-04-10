@@ -49,3 +49,12 @@ export class FetchTransport implements Transport {
     return `${base}/${normalizedPath}`;
   }
 }
+
+/**
+ * Factory function to create a FetchTransport instance.
+ * @param baseUrl - The base URL for all requests (default: '')
+ * @returns A new FetchTransport instance
+ */
+export function fetchTransport(baseUrl: string = ''): Transport {
+  return new FetchTransport(baseUrl);
+}
