@@ -1,0 +1,39 @@
+{
+  "name": "@deessejs/server-next",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Next.js App Router adapter for @deessejs/server using Hono",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@deessejs/server-hono": "workspace:*",
+    "hono": "^4.0.0"
+  },
+  "peerDependencies": {
+    "@deessejs/server": "*",
+    "next": "^14.0.0 || ^15.0.0"
+  },
+  "devDependencies": {
+    "@deessejs/server": "workspace:*",
+    "@deessejs/server-hono": "workspace:*",
+    "@deessejs/fp": "^3.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0",
+    "zod": "^3.0.0"
+  }
+}
