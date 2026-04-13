@@ -4,7 +4,7 @@
 
 // Core functions
 export { defineContext } from "./context/index.js";
-export { createAPI, createPublicAPI, createLocalExecutor } from "./api/index.js";
+export { createAPI, createPublicAPI } from "./api/index.js";
 export { QueryBuilder } from "./query/index.js";
 
 // Re-export types from @deessejs/fp
@@ -29,9 +29,6 @@ export type {
   SendOptions,
   PendingEvent,
 } from "./types.js";
-
-// Local executor
-export type { LocalExecutor } from "./api/index.js";
 
 // Events
 export { EventEmitter, defineEvents } from "./events/index.js";

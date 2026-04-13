@@ -3,7 +3,7 @@ import type { Plugin, Middleware, Router, Procedure, PendingEvent, SendOptions }
 import { EventEmitter } from "../events/emitter.js";
 import { createErrorResult } from "../errors/server-error.js";
 import { isRouter, isProcedure } from "../router/index.js";
-import type { APIInstance, LocalExecutor } from "./types.js";
+import type { APIInstance } from "./types.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface APIInstanceInternal<Ctx, TRoutes extends Router<Ctx>> {
@@ -198,6 +198,7 @@ export function createAPI<Ctx, TRoutes extends Router<Ctx>>(
       if (prop === "eventEmitter") return target.eventEmitter;
       if (prop === "execute") return target.execute.bind(target);
       if (prop === "executeRaw") return target.executeRaw.bind(target);
+      if (prop === "getEvents") return () => target.eventEmitter?.getEventLog() ?? [];
       return (routerProxy as any)[prop];
     },
   });
@@ -213,17 +214,6 @@ export function createPublicAPI<Ctx, TRoutes extends Router<Ctx>>(
     plugins: api.plugins,
     middleware: api.globalMiddleware,
   }) as any;
-}
-
-export function createLocalExecutor(
-  api: APIInstance<unknown>
-): LocalExecutor {
-  return {
-    execute: async (route: string, args: unknown) => {
-      return api.executeRaw(route, args);
-    },
-    getEvents: () => api.eventEmitter?.getEventLog() ?? [],
-  };
 }
 
 type PublicRouter<TRoutes extends Router> = {

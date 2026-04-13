@@ -13,11 +13,6 @@ export interface APIInstance<Ctx, TRoutes = import("../types.js").Router<Ctx>> {
   executeRaw(route: string, args: unknown): Promise<import("@deessejs/fp").Result<unknown>>;
 }
 
-export interface LocalExecutor {
-  execute(route: string, args: unknown): Promise<import("@deessejs/fp").Result<unknown>>;
-  getEvents(): any[];
-}
-
 export interface APIConfig<TRoutes extends import("../types.js").Router<unknown>> {
   router: TRoutes;
   context: unknown;

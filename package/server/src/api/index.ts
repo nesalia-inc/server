@@ -1,2 +1,2 @@
-export type { APIInstance, LocalExecutor, APIConfig } from "./types.js";
-export { createAPI, createPublicAPI, createLocalExecutor } from "./factory.js";
+export type { APIInstance, APIConfig } from "./types.js";
+export { createAPI, createPublicAPI } from "./factory.js";
