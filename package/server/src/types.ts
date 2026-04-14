@@ -55,9 +55,12 @@ export interface Plugin<Ctx> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Router<Ctx = any, Routes = Record<string, any>> = Routes & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: Router<Ctx> | Procedure<Ctx, any, any>;
+export type Router<Ctx = any, Routes extends Record<string, any> = Record<string, any>> = {
+  [K in keyof Routes & string]: Routes[K] extends Procedure<Ctx, any, any>
+    ? Routes[K]
+    : Routes[K] extends Record<string, any>
+      ? Router<Ctx, Routes[K]>
+      : never;
 };
 
 export type Procedure<Ctx, Args, Output> =

@@ -1,6 +1,6 @@
 import type { ZodType } from "zod";
 import type { Result } from "@deessejs/fp";
-import type { Query, HandlerContext, EventRegistry } from "../types.js";
+import type { Query, HandlerContext, EventRegistry, ProcedureType } from "../types.js";
 import type { BeforeInvokeHook, AfterInvokeHook, OnSuccessHook, OnErrorHook } from "../types.js";
 
 export interface QueryConfig<Ctx, Args, Output, Events extends EventRegistry = EventRegistry> {
@@ -11,18 +11,19 @@ export interface QueryConfig<Ctx, Args, Output, Events extends EventRegistry = E
 // HookedProcedureMixin for chainable hooks
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface HookedProcedureMixin<Ctx, Args, Output = any> {
+  type: ProcedureType;
   beforeInvoke(hook: BeforeInvokeHook<Ctx, Args>): this;
-   
+
   afterInvoke(hook: AfterInvokeHook<Ctx, Args, Output>): this;
-   
+
   onSuccess(hook: OnSuccessHook<Ctx, Args, Output>): this;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onError(hook: OnErrorHook<Ctx, Args, any>): this;
   _hooks: {
     beforeInvoke?: BeforeInvokeHook<Ctx, Args>;
-     
+
     afterInvoke?: AfterInvokeHook<Ctx, Args, Output>;
-     
+
     onSuccess?: OnSuccessHook<Ctx, Args, Output>;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError?: OnErrorHook<Ctx, Args, any>;

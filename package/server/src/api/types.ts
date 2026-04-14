@@ -9,18 +9,18 @@ export type EventEmitterAny = EventEmitter<any>;
 export type ProcedureProxy<Ctx, Args, Output> = (args: Args) => Promise<Result<Output>>;
 
 // RouterProxy - recursively maps routes to typed proxies
-export type RouterProxy<Ctx, Routes extends Router<Ctx>> = {
+export type RouterProxy<Ctx, Routes extends Router<Ctx, any>> = {
   [K in keyof Routes]: Routes[K] extends Procedure<Ctx, infer Args, infer Output>
     ? ProcedureProxy<Ctx, Args, Output>
-    : Routes[K] extends Router<Ctx>
+    : Routes[K] extends Router<Ctx, any>
       ? RouterProxy<Ctx, Routes[K]>
       : Routes[K];
 };
 
 // TypedAPIInstance - the full return type combining APIInstance properties with the router proxy
-export type TypedAPIInstance<Ctx, TRoutes extends Router<Ctx>> = APIInstance<Ctx, TRoutes> & RouterProxy<Ctx, TRoutes>;
+export type TypedAPIInstance<Ctx, TRoutes extends Router<Ctx, any>> = APIInstance<Ctx, TRoutes> & RouterProxy<Ctx, TRoutes>;
 
-export interface APIInstance<Ctx, TRoutes = Router<Ctx>> {
+export interface APIInstance<Ctx, TRoutes = Router<Ctx, any>> {
   readonly router: TRoutes;
   readonly ctx: Ctx;
   readonly plugins: import("../types.js").Plugin<Ctx>[];
@@ -31,7 +31,7 @@ export interface APIInstance<Ctx, TRoutes = Router<Ctx>> {
   executeRaw(route: string, args: unknown): Promise<import("@deessejs/fp").Result<unknown>>;
 }
 
-export interface APIConfig<TRoutes extends import("../types.js").Router<unknown>> {
+export interface APIConfig<TRoutes extends Router<unknown, any>> {
   router: TRoutes;
   context: unknown;
   plugins: import("../types.js").Plugin<unknown>[];

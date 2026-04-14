@@ -25,6 +25,7 @@ export function createMutationWithHooks<Ctx, Args, Output>(
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface HookedProcedureMixin<Ctx, Args, Output> {
+  type: ProcedureType;
   beforeInvoke(hook: BeforeInvokeHook<Ctx, Args>): this;
   afterInvoke(hook: AfterInvokeHook<Ctx, Args, Output>): this;
   onSuccess(hook: OnSuccessHook<Ctx, Args, Output>): this;

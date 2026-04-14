@@ -5,7 +5,7 @@
  * Internal operations (internalQuery, internalMutation) are NOT exposed via HTTP.
  */
 
-import { defineContext, createAPI, createPublicAPI } from "@deessejs/server";
+import { defineContext, createPublicAPI } from "@deessejs/server";
 import { ok, err, error } from "@deessejs/fp";
 import { z } from "zod";
 

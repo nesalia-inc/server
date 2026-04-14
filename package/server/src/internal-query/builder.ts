@@ -22,6 +22,7 @@ export function createInternalQueryWithHooks<Ctx, Output>(
 }
 
 interface HookedProcedureMixin<Ctx, Args, Output> {
+  type: "query" | "mutation" | "internalQuery" | "internalMutation";
   beforeInvoke(hook: BeforeInvokeHook<Ctx, Args>): this;
   afterInvoke(hook: AfterInvokeHook<Ctx, Args, Output>): this;
   onSuccess(hook: OnSuccessHook<Ctx, Args, Output>): this;

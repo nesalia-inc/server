@@ -58,10 +58,10 @@ export function isProcedure(obj: any): obj is Procedure<any, any, any> {
   );
 }
 
-export function resolvePath(
-  router: Router,
+export function resolvePath<Ctx, Routes extends Record<string, any>>(
+  router: Router<Ctx, Routes>,
   path: string
-): Procedure<any, any, any> | Router | undefined {
+): Procedure<Ctx, any, any> | Router<Ctx, Routes> | undefined {
   const parts = path.split(".");
   let current: any = router;
 

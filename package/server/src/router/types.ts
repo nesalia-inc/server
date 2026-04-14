@@ -1,7 +1,6 @@
-import type { Router, Procedure } from "../types.js";
+import type { Procedure } from "../types.js";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RouterConfig<Ctx> = Record<string, Procedure<Ctx, any, any> | Router<Ctx>>;
+export type RouterConfig<Ctx> = Record<string, Procedure<Ctx, unknown, unknown> | Record<string, any>>;
 
 export interface ValidationResult {
   valid: boolean;
