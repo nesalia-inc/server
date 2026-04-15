@@ -1,19 +1,35 @@
-import type { EventRegistry, EventPayload } from "../types.js";
+import  { type EventRegistry, type EventPayload } from "../types.js";
+import { ok, err, unit, error, type Result, type Unit } from "@deessejs/fp";
+
+const MAX_EVENT_LOG_SIZE = 1000;
 
 export class EventEmitter<Events extends EventRegistry = EventRegistry> {
   private listeners: Map<string, Set<(payload: EventPayload) => void | Promise<void>>> = new Map();
   private eventLog: EventPayload[] = [];
+  // Prefix-based index for wildcard patterns: first segment -> set of patterns
+  // E.g., "user" -> Set of patterns like "user.*"
+  private prefixIndex: Map<string, Set<string>> = new Map();
 
   constructor(_events?: Events) {
   }
 
   on<EventName extends keyof Events>(
     event: EventName,
-    handler: (payload: EventPayload) => void | Promise<void>
+    handler: (payload: EventPayload<Events[EventName]["data"]>) => void | Promise<void>
   ): () => void {
     const eventStr = event as string;
     if (!this.listeners.has(eventStr)) {
       this.listeners.set(eventStr, new Set());
+      // Index wildcard patterns by their first segment
+      if (eventStr.endsWith(".*")) {
+        const firstSegment = eventStr.split(".")[0];
+        if (firstSegment && firstSegment !== "*") {
+          if (!this.prefixIndex.has(firstSegment)) {
+            this.prefixIndex.set(firstSegment, new Set());
+          }
+          this.prefixIndex.get(firstSegment)!.add(eventStr);
+        }
+      }
     }
     /* eslint-disable @typescript-eslint/no-explicit-any */
     this.listeners.get(eventStr)!.add(handler as any);
@@ -27,26 +43,48 @@ export class EventEmitter<Events extends EventRegistry = EventRegistry> {
 
   off<EventName extends keyof Events>(
     event: EventName,
-    handler: (payload: EventPayload) => void | Promise<void>
+    handler: (payload: EventPayload<Events[EventName]["data"]>) => void | Promise<void>
   ): void {
-    const handlers = this.listeners.get(event as string);
+    const eventStr = event as string;
+    const handlers = this.listeners.get(eventStr);
     if (handlers) {
       /* eslint-disable @typescript-eslint/no-explicit-any */
       handlers.delete(handler as any);
       /* eslint-enable @typescript-eslint/no-explicit-any */
+
+      // If no more handlers for this pattern, remove from index
+      if (handlers.size === 0) {
+        this.listeners.delete(eventStr);
+        this.removePatternFromIndex(eventStr);
+      }
+    }
+  }
+
+  private removePatternFromIndex(eventStr: string): void {
+    if (!eventStr.endsWith(".*")) return;
+
+    const firstSegment = eventStr.split(".")[0];
+    if (!firstSegment || firstSegment === "*") return;
+
+    const prefixSet = this.prefixIndex.get(firstSegment);
+    if (!prefixSet) return;
+
+    prefixSet.delete(eventStr);
+    if (prefixSet.size === 0) {
+      this.prefixIndex.delete(firstSegment);
     }
   }
 
   async emit<EventName extends keyof Events>(
     event: EventName,
     data: Events[EventName]["data"]
-  ): Promise<void>;
-  async emit(event: string, data: unknown, namespace?: string): Promise<void>;
+  ): Promise<Result<Unit>>;
+  async emit(event: string, data: unknown, namespace?: string): Promise<Result<Unit>>;
   async emit(
     event: keyof Events | string,
     data: unknown,
     namespace?: string
-  ): Promise<void> {
+  ): Promise<Result<Unit>> {
     const eventName = event as string;
     const handlers = this.listeners.get(eventName);
     const wildcardHandlers = this.getWildcardHandlers(eventName);
@@ -71,20 +109,27 @@ export class EventEmitter<Events extends EventRegistry = EventRegistry> {
     };
 
     this.eventLog.push(payload);
+    if (this.eventLog.length > MAX_EVENT_LOG_SIZE) {
+      this.eventLog.shift();
+    }
 
     // If no handlers, we're done
-    if (allHandlers.size === 0) return;
-
-    const promises: Promise<void>[] = [];
+    if (allHandlers.size === 0) return ok(unit);
 
     for (const handler of allHandlers) {
-      const result = handler(payload);
-      if (result instanceof Promise) {
-        promises.push(result);
+      try {
+        const result = handler(payload);
+        if (result instanceof Promise) {
+          await result;
+        }
+      } catch (error_) {
+        const errMsg = error_ instanceof Error ? error_.message : String(error_);
+        const fpErr = error({ name: "INTERNAL_ERROR", message: (_: unknown) => errMsg })({ message: errMsg });
+        return err(fpErr);
       }
     }
 
-    await Promise.all(promises);
+    return ok(unit);
   }
 
   getEventLog(): EventPayload[] {
@@ -98,8 +143,34 @@ export class EventEmitter<Events extends EventRegistry = EventRegistry> {
   private getWildcardHandlers(eventName: string): Set<(payload: EventPayload) => void | Promise<void>> {
     const handlers = new Set<(payload: EventPayload) => void | Promise<void>>();
 
-    // Check all possible wildcard patterns (e.g., "user.*", "*")
-    for (const pattern of this.listeners.keys()) {
+    this.addGlobalWildcardHandlers(handlers);
+    this.addMatchingWildcardHandlers(handlers, eventName);
+
+    return handlers;
+  }
+
+  private addGlobalWildcardHandlers(handlers: Set<(payload: EventPayload) => void | Promise<void>>): void {
+    const globalHandlers = this.listeners.get("*");
+    if (globalHandlers) {
+      for (const handler of globalHandlers) {
+        handlers.add(handler);
+      }
+    }
+  }
+
+  private addMatchingWildcardHandlers(handlers: Set<(payload: EventPayload) => void | Promise<void>>, eventName: string): void {
+    const eventParts = eventName.split(".");
+    if (eventParts.length === 0) {
+      return;
+    }
+
+    const firstSegment = eventParts[0];
+    const candidatePatterns = this.prefixIndex.get(firstSegment);
+    if (!candidatePatterns) {
+      return;
+    }
+
+    for (const pattern of candidatePatterns) {
       if (this.isWildcardMatch(eventName, pattern)) {
         const wildcardHandlers = this.listeners.get(pattern);
         if (wildcardHandlers) {
@@ -109,8 +180,6 @@ export class EventEmitter<Events extends EventRegistry = EventRegistry> {
         }
       }
     }
-
-    return handlers;
   }
 
   private isWildcardMatch(eventName: string, pattern: string): boolean {
@@ -121,18 +190,36 @@ export class EventEmitter<Events extends EventRegistry = EventRegistry> {
 
     // Check if pattern ends with ".*" (suffix wildcard)
     if (pattern.endsWith(".*")) {
-      const prefix = pattern.slice(0, -2);
-      const prefixParts = prefix.split(".");
-      // Match if event parts start with pattern prefix
-      if (eventParts.length >= prefixParts.length) {
-        for (let i = 0; i < prefixParts.length; i++) {
-          if (prefixParts[i] !== eventParts[i]) return false;
-        }
-        return true;
-      }
+      return this.matchPrefix(eventParts, pattern.slice(0, -2));
+    }
+
+    // Check if pattern starts with "*." (leading wildcard)
+    if (pattern.startsWith("*.")) {
+      return this.matchSuffix(eventParts, pattern.slice(2));
     }
 
     return false;
+  }
+
+  private matchPrefix(eventParts: string[], prefix: string): boolean {
+    const prefixParts = prefix.split(".");
+    if (eventParts.length < prefixParts.length) return false;
+
+    for (let i = 0; i < prefixParts.length; i++) {
+      if (prefixParts[i] !== eventParts[i]) return false;
+    }
+    return true;
+  }
+
+  private matchSuffix(eventParts: string[], suffix: string): boolean {
+    const suffixParts = suffix.split(".");
+    if (eventParts.length < suffixParts.length) return false;
+
+    const offset = eventParts.length - suffixParts.length;
+    for (let i = 0; i < suffixParts.length; i++) {
+      if (suffixParts[i] !== eventParts[offset + i]) return false;
+    }
+    return true;
   }
 }
 

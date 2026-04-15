@@ -1,4 +1,4 @@
-import type { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import type { UseQueryOptions, UseMutationOptions, QueryClient } from '@tanstack/react-query';
 
 export interface QueryConfig<TData, TError> {
   queryKey?: unknown[];
@@ -6,5 +6,7 @@ export interface QueryConfig<TData, TError> {
 }
 
 export interface MutationConfig<TData, TError, TVariables> {
+  queryKey?: unknown[];
   mutationOptions?: Omit<UseMutationOptions<TData, TError, TVariables>, 'mutationFn'>;
+  queryClient?: QueryClient;
 }

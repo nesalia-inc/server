@@ -1,22 +1,23 @@
-import type { ZodType } from "zod";
-import type { Result } from "@deessejs/fp";
-import type {
-  Middleware,
-  Router,
-  BeforeInvokeHook,
-  AfterInvokeHook,
-  OnSuccessHook,
-  OnErrorHook,
-  EventRegistry,
+import  { type ZodType } from "zod";
+import  { type Result } from "@deessejs/fp";
+import  {
+  type Middleware,
+  type Router,
+  type BeforeInvokeHook,
+  type AfterInvokeHook,
+  type OnSuccessHook,
+  type OnErrorHook,
+  type EventRegistry,
+  type EventPayload,
 } from "../types.js";
-import type { QueryConfig, QueryWithHooks } from "./types.js";
-import type { MutationConfig } from "../mutation/types.js";
-import type { MutationWithHooks } from "../mutation/builder.js";
-import type { InternalQueryConfig } from "../internal-query/types.js";
-import type { InternalQueryWithHooks } from "../internal-query/builder.js";
-import type { InternalMutationConfig } from "../internal-mutation/types.js";
-import type { InternalMutationWithHooks } from "../internal-mutation/builder.js";
-import type { EventEmitter } from "../events/emitter.js";
+import  { type QueryConfig, type QueryWithHooks } from "./types.js";
+import  { type MutationConfig } from "../mutation/types.js";
+import  { type MutationWithHooks } from "../mutation/builder.js";
+import  { type InternalQueryConfig } from "../internal-query/types.js";
+import  { type InternalQueryWithHooks } from "../internal-query/builder.js";
+import  { type InternalMutationConfig } from "../internal-mutation/types.js";
+import  { type InternalMutationWithHooks } from "../internal-mutation/builder.js";
+import  { type EventEmitter } from "../events/emitter.js";
 
 export class QueryBuilder<Ctx, Events extends EventRegistry = EventRegistry> {
   constructor(
@@ -79,16 +80,14 @@ export class QueryBuilder<Ctx, Events extends EventRegistry = EventRegistry> {
     event: EventName,
     handler: (ctx: Ctx, payload: { name: string; data: Events[EventName]["data"] }) => void | Promise<void>
   ): () => void {
-    /* eslint-disable @typescript-eslint/no-explicit-any */
     if (!this.eventEmitter) {
       return () => {};
     }
     // Wrap the handler to pass context (this.context) as the first argument
-    const wrappedHandler = (payload: any) => {
+    const wrappedHandler = (payload: EventPayload<Events[EventName]["data"]>) => {
       return handler(this.context, payload);
     };
-    return this.eventEmitter.on(event, wrappedHandler as any);
-    /* eslint-enable @typescript-eslint/no-explicit-any */
+    return this.eventEmitter.on(event, wrappedHandler);
   }
 }
 
@@ -112,12 +111,14 @@ interface HookedProcedureMixin<Ctx, Args, Output> {
   afterInvoke(hook: AfterInvokeHook<Ctx, Args, Output>): this;
   onSuccess(hook: OnSuccessHook<Ctx, Args, Output>): this;
   onError(hook: OnErrorHook<Ctx, Args, any>): this;
+  use(middleware: Middleware<Ctx>): this;
   _hooks: {
     beforeInvoke?: BeforeInvokeHook<Ctx, Args>;
     afterInvoke?: AfterInvokeHook<Ctx, Args, Output>;
     onSuccess?: OnSuccessHook<Ctx, Args, Output>;
     onError?: OnErrorHook<Ctx, Args, any>;
   };
+  _middleware: Middleware<Ctx>[];
 }
 
 interface BaseProc<Ctx = any, Args = any, Output = any> {
@@ -134,6 +135,7 @@ function createHookedProcedure<Ctx, Args, Output>(
     argsSchema: proc.argsSchema,
     handler: proc.handler,
     _hooks: {},
+    _middleware: [],
   };
 
   hookedProc.beforeInvoke = function(hook: BeforeInvokeHook<any, any>) {
@@ -154,6 +156,71 @@ function createHookedProcedure<Ctx, Args, Output>(
   hookedProc.onError = function(hook: OnErrorHook<any, any, any>) {
     hookedProc._hooks.onError = hook;
     return hookedProc;
+  };
+
+  hookedProc.use = function(middleware: Middleware<any>) {
+    const newProc: any = {
+      type: hookedProc.type,
+      argsSchema: hookedProc.argsSchema,
+      handler: hookedProc.handler,
+      _hooks: { ...hookedProc._hooks },
+      _middleware: [...hookedProc._middleware, middleware],
+    };
+
+    newProc.beforeInvoke = function(hook: BeforeInvokeHook<any, any>) {
+      newProc._hooks.beforeInvoke = hook;
+      return newProc;
+    };
+
+    newProc.afterInvoke = function(hook: AfterInvokeHook<any, any, any>) {
+      newProc._hooks.afterInvoke = hook;
+      return newProc;
+    };
+
+    newProc.onSuccess = function(hook: OnSuccessHook<any, any, any>) {
+      newProc._hooks.onSuccess = hook;
+      return newProc;
+    };
+
+    newProc.onError = function(hook: OnErrorHook<any, any, any>) {
+      newProc._hooks.onError = hook;
+      return newProc;
+    };
+
+    newProc.use = function(mw: Middleware<any>) {
+      const result: any = {
+        type: newProc.type,
+        argsSchema: newProc.argsSchema,
+        handler: newProc.handler,
+        _hooks: { ...newProc._hooks },
+        _middleware: [...newProc._middleware, mw],
+      };
+
+      result.beforeInvoke = function(hook: BeforeInvokeHook<any, any>) {
+        result._hooks.beforeInvoke = hook;
+        return result;
+      };
+
+      result.afterInvoke = function(hook: AfterInvokeHook<any, any, any>) {
+        result._hooks.afterInvoke = hook;
+        return result;
+      };
+
+      result.onSuccess = function(hook: OnSuccessHook<any, any, any>) {
+        result._hooks.onSuccess = hook;
+        return result;
+      };
+
+      result.onError = function(hook: OnErrorHook<any, any, any>) {
+        result._hooks.onError = hook;
+        return result;
+      };
+
+      result.use = newProc.use;
+      return result;
+    };
+
+    return newProc;
   };
 
   return hookedProc;

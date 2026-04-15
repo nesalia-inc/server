@@ -1,6 +1,6 @@
-import type { Result } from "@deessejs/fp";
-import type { BeforeInvokeHook } from "../types.js";
-import type { Hooks } from "./types.js";
+import  { type Result } from "@deessejs/fp";
+import  { type BeforeInvokeHook } from "../types.js";
+import  { type Hooks } from "./types.js";
 
 export async function executeHooks<Ctx, Args, Output>(
   hooks: Hooks<Ctx, Args, Output>,

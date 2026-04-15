@@ -55,11 +55,18 @@ export {
   type Metadata,
 } from "./procedure/index.js";
 
+// Middleware
+export { createMiddleware } from "./middleware/builder.js";
+export { withQuery, withMutation } from "./middleware/helpers.js";
+
 // Also re-export the individual config types from their modules for convenience
 export type { QueryConfig } from "./query/types.js";
 export type { MutationConfig } from "./mutation/types.js";
 export type { InternalQueryConfig } from "./internal-query/types.js";
 export type { InternalMutationConfig } from "./internal-mutation/types.js";
+
+// API types
+export type { RequestInfo } from "./api/types.js";
 
 // Errors
 export {

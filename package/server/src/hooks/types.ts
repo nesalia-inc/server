@@ -1,4 +1,4 @@
-import type { BeforeInvokeHook } from "../types.js";
+import  { type BeforeInvokeHook } from "../types.js";
 
 export interface Hooks<Ctx, Args, Output> {
   beforeInvoke?: BeforeInvokeHook<Ctx, Args>;

@@ -1,5 +1,5 @@
-import type { ZodType } from "zod";
-import type { Result } from "@deessejs/fp";
+import { type ZodType } from "zod";
+import { type Result } from "@deessejs/fp";
 
 export type { Result } from "@deessejs/fp";
 
@@ -44,8 +44,12 @@ export interface Middleware<Ctx, Args = unknown> {
   readonly name: string;
   readonly args?: Args;
   readonly handler: (
-    ctx: Ctx & { args: Args; meta: Record<string, unknown> },
-    next: () => Promise<Result<unknown>>
+    ctx: Ctx,
+    opts: {
+      next: (overrides?: { ctx?: Partial<Ctx> }) => Promise<Result<unknown>>;
+      args: Args;
+      meta: Record<string, unknown>;
+    }
   ) => Promise<Result<unknown>>;
 }
 
@@ -54,10 +58,13 @@ export interface Plugin<Ctx> {
   readonly extend: (ctx: Ctx) => Partial<Ctx>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Router<Ctx = any, Routes = Record<string, any>> = Routes & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: Router<Ctx> | Procedure<Ctx, any, any>;
+export type Router<Ctx = unknown, Routes extends Record<string, unknown> = Record<string, unknown>> = {
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+  [K in keyof Routes & string]: Routes[K] extends Procedure<Ctx, infer _Args, infer _Output>
+    ? Routes[K]
+    : Routes[K] extends Record<string, unknown>
+      ? Router<Ctx, Routes[K]>
+      : never;
 };
 
 export type Procedure<Ctx, Args, Output> =

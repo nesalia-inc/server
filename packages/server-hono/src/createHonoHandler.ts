@@ -3,6 +3,13 @@ import type { HTTPClient } from "./types.js";
 import { getHTTPStatus } from "./errors.js";
 import type { Error } from "@deessejs/fp";
 
+interface RequestInfo {
+  headers?: Record<string, string>;
+  method?: string;
+  url?: string;
+  [key: string]: unknown;
+}
+
 /**
  * Converts a path like "users/get" to "users.get" for procedure lookup
  */
@@ -48,7 +55,15 @@ export function createHonoHandler(client: HTTPClient): Hono {
       args = queryParams as Record<string, unknown>;
     }
 
-    const result = await client.execute(path, args);
+    const requestInfo: RequestInfo = {
+      headers: c.req.header(),
+      method: c.req.method,
+      url: c.req.url,
+    };
+
+    // Cast to any to avoid TypeScript confusion with intersection of APIInstance & RouterProxy
+    // The execute method signature is correctly defined in APIInstance
+    const result = await (client as { execute(route: string, args: unknown, requestInfo?: RequestInfo): Promise<{ ok: boolean; value?: unknown; error?: Error }> }).execute(path, args, requestInfo);
 
     if (result.ok) {
       return c.json(result);

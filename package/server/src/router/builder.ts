@@ -1,4 +1,5 @@
-import type { Router, Procedure } from "../types.js";
+import  { type Router, type Procedure } from "../types.js";
+import { type Maybe, none, fromNullable } from "@deessejs/fp";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function flattenRouter<Ctx, R extends Router<Ctx, any>>(
@@ -37,6 +38,7 @@ export function getInternalRoutes<Ctx, R extends Router<Ctx, any>>(
   );
 }
 
+/* eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types -- Type guard must accept any type */
 export function isRouter(obj: any): obj is Router<any, any> {
   if (!obj || typeof obj !== "object") return false;
 
@@ -49,6 +51,7 @@ export function isRouter(obj: any): obj is Router<any, any> {
   return true;
 }
 
+/* eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types -- Type guard must accept any type */
 export function isProcedure(obj: any): obj is Procedure<any, any, any> {
   return (
     obj &&
@@ -58,25 +61,23 @@ export function isProcedure(obj: any): obj is Procedure<any, any, any> {
   );
 }
 
-export function resolvePath(
-  router: Router,
+export function resolvePath<Ctx, Routes extends Record<string, any>>(
+  router: Router<Ctx, Routes>,
   path: string
-): Procedure<any, any, any> | Router | undefined {
-  const parts = path.split(".");
+): Maybe<Procedure<Ctx, any, any> | Router<Ctx, Routes>> {
   let current: any = router;
-
+  const parts = path.split(".");
   for (const part of parts) {
-    if (current === undefined || current === null) {
-      return undefined;
+    if (current === null || current === undefined) {
+      return none();
     }
     current = current[part];
   }
-
-  return current;
+  return fromNullable(current);
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-import type { ValidationResult } from "./types.js";
+import  { type ValidationResult } from "./types.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function validateRouter<Ctx, R extends Router<Ctx, any>>(
