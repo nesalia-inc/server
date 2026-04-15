@@ -91,28 +91,56 @@ function createHookedProcedure<
     };
 
     newProc.beforeInvoke = function(hook: BeforeInvokeHook<any, any>) {
-      hookedProc._hooks.beforeInvoke = hook;
+      newProc._hooks.beforeInvoke = hook;
       return newProc;
     };
 
     newProc.afterInvoke = function(hook: AfterInvokeHook<any, any, any>) {
-      hookedProc._hooks.afterInvoke = hook;
+      newProc._hooks.afterInvoke = hook;
       return newProc;
     };
 
     newProc.onSuccess = function(hook: OnSuccessHook<any, any, any>) {
-      hookedProc._hooks.onSuccess = hook;
+      newProc._hooks.onSuccess = hook;
       return newProc;
     };
 
     newProc.onError = function(hook: OnErrorHook<any, any, any>) {
-      hookedProc._hooks.onError = hook;
+      newProc._hooks.onError = hook;
       return newProc;
     };
 
     newProc.use = function(mw: Middleware<any>) {
-      newProc._middleware.push(mw);
-      return newProc;
+      const result: any = {
+        type: newProc.type,
+        argsSchema: newProc.argsSchema,
+        handler: newProc.handler,
+        _hooks: { ...newProc._hooks },
+        _middleware: [...newProc._middleware, mw],
+      };
+
+      result.beforeInvoke = function(hook: BeforeInvokeHook<any, any>) {
+        result._hooks.beforeInvoke = hook;
+        return result;
+      };
+
+      result.afterInvoke = function(hook: AfterInvokeHook<any, any, any>) {
+        result._hooks.afterInvoke = hook;
+        return result;
+      };
+
+      result.onSuccess = function(hook: OnSuccessHook<any, any, any>) {
+        result._hooks.onSuccess = hook;
+        return result;
+      };
+
+      result.onError = function(hook: OnErrorHook<any, any, any>) {
+        result._hooks.onError = hook;
+        return result;
+      };
+
+      result.use = newProc.use;
+      return result;
     };
 
     return newProc;
