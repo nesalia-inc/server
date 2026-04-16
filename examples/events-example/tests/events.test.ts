@@ -614,7 +614,7 @@ describe("Edge Cases", () => {
     // This will emit email.sent but we don't have a listener for it in this test
     await api.execute("users.create", {
       name: "No Listener",
-      email: "no listener@example.com",
+      email: "nolistener@example.com",
     });
 
     const emittedEvents = api.getEvents();

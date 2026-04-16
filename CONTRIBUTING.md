@@ -68,7 +68,7 @@ Open a new issue with:
 ## Project Structure
 
 ```
-package/server/
+packages/server/
 ├── src/
 │   └── index.ts      # Main entry point
 ├── tsconfig.json     # TypeScript configuration

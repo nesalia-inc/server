@@ -72,7 +72,7 @@ importers:
         version: 3.0.0
       '@deessejs/server':
         specifier: workspace:*
-        version: link:../../package/server
+        version: link:../../packages/server
       zod:
         specifier: ^3.0.0
         version: 3.25.76
@@ -87,45 +87,6 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@20.19.39)(jsdom@25.0.1)
 
-  package/server:
-    devDependencies:
-      '@deessejs/fp':
-        specifier: ^3.0.0
-        version: 3.0.0
-      '@eslint/js':
-        specifier: ^9.17.0
-        version: 9.39.4
-      '@vitest/coverage-v8':
-        specifier: ^2.0.0
-        version: 2.1.9(vitest@2.1.9(@types/node@20.19.39)(jsdom@25.0.1))
-      eslint:
-        specifier: ^9.17.0
-        version: 9.39.4
-      eslint-plugin-import:
-        specifier: ^2.32.0
-        version: 2.32.0(@typescript-eslint/parser@8.58.1(eslint@9.39.4)(typescript@5.9.3))(eslint@9.39.4)
-      eslint-plugin-security:
-        specifier: ^4.0.0
-        version: 4.0.0
-      eslint-plugin-sonarjs:
-        specifier: ^4.0.2
-        version: 4.0.2(eslint@9.39.4)
-      eslint-plugin-unicorn:
-        specifier: ^64.0.0
-        version: 64.0.0(eslint@9.39.4)
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.15.0
-        version: 8.58.1(eslint@9.39.4)(typescript@5.9.3)
-      vitest:
-        specifier: ^2.0.0
-        version: 2.1.9(@types/node@20.19.39)(jsdom@25.0.1)
-      zod:
-        specifier: ^3.0.0
-        version: 3.25.76
-
   packages/client:
     dependencies:
       '@deessejs/fp':
@@ -134,7 +95,7 @@ importers:
     devDependencies:
       '@deessejs/server':
         specifier: workspace:*
-        version: link:../../package/server
+        version: link:../server
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -185,11 +146,50 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@20.19.39)(jsdom@25.0.1)
 
+  packages/server:
+    devDependencies:
+      '@deessejs/fp':
+        specifier: ^3.0.0
+        version: 3.0.0
+      '@eslint/js':
+        specifier: ^9.17.0
+        version: 9.39.4
+      '@vitest/coverage-v8':
+        specifier: ^2.0.0
+        version: 2.1.9(vitest@2.1.9(@types/node@20.19.39)(jsdom@25.0.1))
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.4
+      eslint-plugin-import:
+        specifier: ^2.32.0
+        version: 2.32.0(eslint@9.39.4)
+      eslint-plugin-security:
+        specifier: ^4.0.0
+        version: 4.0.0
+      eslint-plugin-sonarjs:
+        specifier: ^4.0.2
+        version: 4.0.2(eslint@9.39.4)
+      eslint-plugin-unicorn:
+        specifier: ^64.0.0
+        version: 64.0.0(eslint@9.39.4)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.15.0
+        version: 8.58.1(eslint@9.39.4)(typescript@5.9.3)
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@20.19.39)(jsdom@25.0.1)
+      zod:
+        specifier: ^3.0.0
+        version: 3.25.76
+
   packages/server-hono:
     dependencies:
       '@deessejs/server':
         specifier: workspace:*
-        version: link:../../package/server
+        version: link:../server
       hono:
         specifier: ^4.0.0
         version: 4.12.12
@@ -230,7 +230,7 @@ importers:
         version: 3.0.0
       '@deessejs/server':
         specifier: workspace:*
-        version: link:../../package/server
+        version: link:../server
       '@eslint/js':
         specifier: ^9.17.0
         version: 9.39.4
@@ -4138,17 +4138,16 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.58.1(eslint@9.39.4)(typescript@5.9.3))(eslint-import-resolver-node@0.3.10)(eslint@9.39.4):
+  eslint-module-utils@2.12.1(eslint-import-resolver-node@0.3.10)(eslint@9.39.4):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 8.58.1(eslint@9.39.4)(typescript@5.9.3)
       eslint: 9.39.4
       eslint-import-resolver-node: 0.3.10
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.58.1(eslint@9.39.4)(typescript@5.9.3))(eslint@9.39.4):
+  eslint-plugin-import@2.32.0(eslint@9.39.4):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -4159,7 +4158,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.39.4
       eslint-import-resolver-node: 0.3.10
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.58.1(eslint@9.39.4)(typescript@5.9.3))(eslint-import-resolver-node@0.3.10)(eslint@9.39.4)
+      eslint-module-utils: 2.12.1(eslint-import-resolver-node@0.3.10)(eslint@9.39.4)
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -4170,8 +4169,6 @@ snapshots:
       semver: 6.3.1
       string.prototype.trimend: 1.0.9
       tsconfig-paths: 3.15.0
-    optionalDependencies:
-      '@typescript-eslint/parser': 8.58.1(eslint@9.39.4)(typescript@5.9.3)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
