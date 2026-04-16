@@ -19,7 +19,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@deessejs/client": "^1.0.1",
+    "@deessejs/client": "workspace:*",
     "@deessejs/fp": "^3.0.0",
     "@tanstack/react-query": "^5.0.0",
     "react-error-boundary": "^5.0.0"
@@ -29,7 +29,7 @@
     "react": "^18.0.0"
   },
   "devDependencies": {
-    "@deessejs/client": "^1.0.1",
+    "@deessejs/client": "workspace:*",
     "@tanstack/react-query": "^5.0.0",
     "@testing-library/react": "^16.0.0",
     "@types/react": "^18.0.0",
