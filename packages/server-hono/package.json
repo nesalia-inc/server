@@ -1,6 +1,6 @@
 {
   "name": "@deessejs/server-hono",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Hono HTTP adapter for @deessejs/server",
   "license": "MIT",

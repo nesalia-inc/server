@@ -1,0 +1,7 @@
+# @deessejs/server
+
+## 1.0.0
+
+### Minor Changes
+
+- aefa639: Initialize changesets for monorepo release management

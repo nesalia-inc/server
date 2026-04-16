@@ -10,11 +10,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@deessejs/client": "^0.0.1",
-    "@deessejs/client-react": "^0.0.0",
+    "@deessejs/client": "^1.0.0",
+    "@deessejs/client-react": "^1.0.0",
     "@deessejs/fp": "^3.0.0",
-    "@deessejs/server": "^0.0.0",
-    "@deessejs/server-next": "^0.0.0",
+    "@deessejs/server": "^1.0.0",
+    "@deessejs/server-next": "^1.0.0",
     "next": "^14.0.0 || ^15.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

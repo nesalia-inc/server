@@ -1,6 +1,6 @@
 {
   "name": "@deessejs/server-next",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Next.js App Router adapter for @deessejs/server using Hono",
   "license": "MIT",

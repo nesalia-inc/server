@@ -1,6 +1,6 @@
 {
   "name": "@deessejs/client",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "description": "Type-safe HTTP client for @deessejs/server",
   "license": "MIT",

@@ -1,6 +1,6 @@
 {
   "name": "@deessejs/client-react",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "React hooks for @deessejs/client with TanStack Query",
   "license": "MIT",
@@ -19,7 +19,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@deessejs/client": "^0.0.0",
+    "@deessejs/client": "^1.0.0",
     "@deessejs/fp": "^3.0.0",
     "@tanstack/react-query": "^5.0.0",
     "react-error-boundary": "^5.0.0"
@@ -29,7 +29,7 @@
     "react": "^18.0.0"
   },
   "devDependencies": {
-    "@deessejs/client": "^0.0.0",
+    "@deessejs/client": "^1.0.0",
     "@tanstack/react-query": "^5.0.0",
     "@testing-library/react": "^16.0.0",
     "@types/react": "^18.0.0",

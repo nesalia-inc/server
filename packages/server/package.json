@@ -1,6 +1,6 @@
 {
   "name": "@deessejs/server",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Modern functional-first RPC protocol for type-safe APIs",
   "license": "MIT",
