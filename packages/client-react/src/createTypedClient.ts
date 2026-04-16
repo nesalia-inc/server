@@ -148,7 +148,6 @@ function createHookHandlers(transport: Transport, pathParts: string[]): unknown 
       // Extract user callbacks from mutationOptions - these will be passed directly
       // to useMutation so TanStack calls them directly (not through our wrapper)
       const userOnMutate = config?.mutationOptions?.onMutate;
-      const userOnSuccess = config?.mutationOptions?.onSuccess;
       const userOnError = config?.mutationOptions?.onError;
       const userOnSettled = config?.mutationOptions?.onSettled;
 
@@ -162,14 +161,12 @@ function createHookHandlers(transport: Transport, pathParts: string[]): unknown 
           if (data.ok !== false) {
             return data.value;
           }
-          const err = new Error(data.error?.message ?? "Request failed");
-          (err as Record<string, unknown>).data = data;
+          const err = new Error(data.error?.message ?? "Request failed") as Error & { data: unknown };
+          err.data = data;
           throw err;
         },
         onMutate: userOnMutate,
-        onSuccess: (data, variables, context) => {
-          // TanStack calls userOnSuccess directly, we just add auto-invalidation
-          userOnSuccess?.(data, variables, context);
+        onSuccess: () => {
           queryClient.invalidateQueries({ queryKey });
         },
         onError: userOnError,
