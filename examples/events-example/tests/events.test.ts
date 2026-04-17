@@ -190,7 +190,7 @@ describe("ctx.send() - Event Emission", () => {
   it("should emit events after successful mutation", async () => {
     const { api } = createTestAPI();
 
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "John Doe",
       email: "john@example.com",
     });
@@ -206,7 +206,7 @@ describe("ctx.send() - Event Emission", () => {
   it("should emit multiple events from a single mutation", async () => {
     const { api } = createTestAPI();
 
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "Jane Doe",
       email: "jane@example.com",
     });
@@ -220,7 +220,7 @@ describe("ctx.send() - Event Emission", () => {
   it("should not emit events when mutation fails", async () => {
     const { api } = createTestAPI();
 
-    const result = await api.execute("fail", { shouldFail: true });
+    const result = await api.fail( { shouldFail: true });
 
     expect(result.ok).toBe(false);
     const emittedEvents = api.getEvents();
@@ -253,7 +253,7 @@ describe("ctx.send() - Event Emission", () => {
       router: t.router({ test: throwingMutation }),
     });
 
-    const result = await testApi.execute("test", {});
+    const result = await testApi.test({});
 
     expect(result.ok).toBe(false);
     const emittedEvents = testApi.getEvents();
@@ -263,7 +263,7 @@ describe("ctx.send() - Event Emission", () => {
   it("should include timestamp in event payload", async () => {
     const { api } = createTestAPI();
 
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "Time Test",
       email: "time@example.com",
     });
@@ -276,7 +276,7 @@ describe("ctx.send() - Event Emission", () => {
   it("should include namespace in event payload", async () => {
     const { api } = createTestAPI();
 
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "Namespace Test",
       email: "ns@example.com",
     });
@@ -514,7 +514,7 @@ describe("Transaction Integrity", () => {
     const { api } = createTestAPI();
 
     // Create a user first so we can try to update it
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "Test User",
       email: "test@example.com",
     });
@@ -523,7 +523,7 @@ describe("Transaction Integrity", () => {
     api.getEvents();
 
     // Try to update non-existent user
-    const result = await api.execute("users.update", {
+    const result = await api.users.update( {
       id: 999,
       name: "Nobody",
     });
@@ -555,7 +555,7 @@ describe("Transaction Integrity", () => {
       router: t.router({ test: throwingMutation }),
     });
 
-    const result = await testApi.execute("test", {});
+    const result = await testApi.test({});
 
     expect(result.ok).toBe(false);
     const emittedEvents = testApi.getEvents();
@@ -565,7 +565,7 @@ describe("Transaction Integrity", () => {
   it("should not clear pending events after successful emission (cumulative log)", async () => {
     const { api } = createTestAPI();
 
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "Test",
       email: "test@example.com",
     });
@@ -574,7 +574,7 @@ describe("Transaction Integrity", () => {
     expect(events1.length).toBeGreaterThan(0);
 
     // Next mutation should have MORE events (cumulative)
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "Test2",
       email: "test2@example.com",
     });
@@ -589,7 +589,7 @@ describe("Event Payload Structure", () => {
   it("should have correct payload structure", async () => {
     const { api } = createTestAPI();
 
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "Structure Test",
       email: "structure@example.com",
     });
@@ -612,7 +612,7 @@ describe("Edge Cases", () => {
     const { api } = createTestAPI();
 
     // This will emit email.sent but we don't have a listener for it in this test
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "No Listener",
       email: "nolistener@example.com",
     });
@@ -626,7 +626,7 @@ describe("Edge Cases", () => {
     const { api } = createTestAPI();
 
     // Create user
-    await api.execute("users.create", {
+    await api.users.create( {
       name: "Original",
       email: "original@example.com",
     });
@@ -635,7 +635,7 @@ describe("Edge Cases", () => {
     api.getEvents();
 
     // Update with no args - should not emit event since nothing provided
-    const result = await api.execute("users.update", {
+    const result = await api.users.update( {
       id: 1,
     });
 
@@ -650,9 +650,9 @@ describe("Edge Cases", () => {
   it("should handle multiple rapid mutations", async () => {
     const { api } = createTestAPI();
 
-    await api.execute("users.create", { name: "User1", email: "u1@example.com" });
-    await api.execute("users.create", { name: "User2", email: "u2@example.com" });
-    await api.execute("users.create", { name: "User3", email: "u3@example.com" });
+    await api.users.create( { name: "User1", email: "u1@example.com" });
+    await api.users.create( { name: "User2", email: "u2@example.com" });
+    await api.users.create( { name: "User3", email: "u3@example.com" });
 
     const emittedEvents = api.getEvents();
     expect(emittedEvents.filter((e: any) => e.name === "user.created")).toHaveLength(3);

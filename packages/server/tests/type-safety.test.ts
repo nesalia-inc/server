@@ -360,7 +360,7 @@ describe("Type Safety - API Type Inference", () => {
     });
 
     // Both execute() and direct proxy should return Result<{ id: string; name: string }>
-    const executeResult = await api.execute("users.get", { id: "1" });
+    const executeResult = await api.users.get({ id: "1" });
     const proxyResult = await api.users.get({ id: "1" });
 
     expect(executeResult.ok).toBe(true);

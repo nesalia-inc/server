@@ -192,13 +192,11 @@ async function main() {
   if (countResult.ok) {
     console.log("   Success:", countResult.value);
   }
+  // Direct method access (api.users.list({})) is the recommended pattern
+  // See the example above for usage
+  console.log("
+--- All tests completed ---");
 
-  // OLD SYNTAX: Still supported for backward compatibility
-  console.log("\n--- Using Legacy Syntax (api.execute('route', {})) ---");
-  const legacyResult = await api.execute("users.list", {});
-  if (legacyResult.ok) {
-    console.log("7. Legacy list result:", legacyResult.value);
-  }
 
   console.log("\n=== Done ===");
 }

@@ -6,15 +6,12 @@ import { createErrorResult, ServerException } from "../errors/server-error.js";
 import { isRouter, isProcedure } from "../router/index.js";
 import  { type APIInstance, type TypedAPIInstance, type RequestInfo } from "./types.js";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 interface APIInstanceState<Ctx, TRoutes extends Router<Ctx>> {
   router: TRoutes;
   ctx: Ctx;
   plugins: Plugin<Ctx>[];
   globalMiddleware: Middleware<Ctx>[];
   eventEmitter?: EventEmitter<any>;
-  executeRaw(route: string, args: unknown): Promise<Result<unknown>>;
-  execute(route: string, args: unknown): Promise<Result<unknown>>;
 }
 
 function createRouterProxy<Ctx>(
@@ -25,7 +22,6 @@ function createRouterProxy<Ctx>(
   eventEmitter: EventEmitter<any> | undefined,
   queue: ReturnType<typeof createPendingEventQueue>,
   path: string[] = []
-/* eslint-disable @typescript-eslint/consistent-return */
 ): any {
   return new Proxy({}, {
     get(target: unknown, prop: string | symbol): unknown {
@@ -50,7 +46,6 @@ function createRouterProxy<Ctx>(
     },
   });
 }
-
 async function executeRoute<Ctx>(
   router: Router<Ctx>,
   ctx: Ctx,
@@ -104,40 +99,30 @@ async function executeProcedure<Ctx, Args, Output>(
   queue: ReturnType<typeof createPendingEventQueue>,
   route: string
 ): Promise<Result<Output>> {
-  // Create handler context with send function
   const handlerCtx = createHandlerContext(ctx, queue);
-
-  // Validate args if schema is defined
   const hookedProc = procedure as any;
   if (hookedProc.argsSchema) {
     const parseResult = hookedProc.argsSchema.safeParse(args);
     if (!parseResult.success) {
       const errors = parseResult.error.errors.map((e: any) => `${e.path.join(".")}: ${e.message}`);
-      /* eslint-disable unicorn/throw-new-error -- errorFn returns a function, not a constructor */
       const ValidationError = errorFn({ name: "VALIDATION_ERROR", message: (args: { message: string }) => args.message });
       return err(
         ValidationError({ message: errors.join(", ") })
           .addNotes(`Validation failed for route: ${route}`)
       );
-      /* eslint-enable unicorn/throw-new-error */
     }
     args = parseResult.data;
   }
 
-  // Extract per-procedure middleware and combine with global middleware
-  // Per-procedure middleware runs AFTER global middleware (as per design doc)
   const procedureMiddleware: Middleware<Ctx>[] = hookedProc._middleware || [];
   const allMiddleware: Middleware<Ctx>[] = [...middleware, ...procedureMiddleware];
 
   try {
     let index = 0;
-    /* eslint-disable-next-line sonarjs/cognitive-complexity, complexity -- Middleware chain requires this complexity */
     const next = async (overrides?: { ctx?: Partial<Ctx> }): Promise<Result<Output>> => {
-      // Merge context if overrides provided
       const currentCtx = overrides?.ctx ? { ...handlerCtx, ...overrides.ctx } : handlerCtx;
 
       if (index >= allMiddleware.length) {
-        // No more middleware, execute procedure handler
         if (hookedProc._hooks?.beforeInvoke) {
           await hookedProc._hooks.beforeInvoke(currentCtx, args);
         }
@@ -151,7 +136,6 @@ async function executeProcedure<Ctx, Args, Output>(
           } else if (!result.ok && hookedProc._hooks?.onError) {
             await hookedProc._hooks.onError(currentCtx, args, result.error);
           }
-          // Only emit events if handler succeeded
           if (result.ok) {
             await queue.flush(eventEmitter);
           }
@@ -161,14 +145,12 @@ async function executeProcedure<Ctx, Args, Output>(
             await hookedProc._hooks.onError(currentCtx, args, error);
           }
           const errToReturn = error instanceof Error ? error : new Error(String(error));
-          /* eslint-disable unicorn/throw-new-error -- errorFn returns a function, not a constructor */
           const InternalError = errorFn({ name: "INTERNAL_ERROR", message: (args: { message: string }) => args.message });
           return err(
             InternalError({ message: errToReturn.message })
               .addNotes(`Error in route: ${route}`)
               .from(errorFn({ name: "INTERNAL_ERROR", message: (_: unknown) => errToReturn.message })({ message: errToReturn.message }))
           );
-          /* eslint-enable unicorn/throw-new-error */
         }
       }
       const mw = allMiddleware[index++];
@@ -180,30 +162,24 @@ async function executeProcedure<Ctx, Args, Output>(
     };
     return await next();
   } catch (error: unknown) {
-    // On error, discard pending events (don't emit them)
     queue.clear();
     const errToReturn = error instanceof Error ? error : new Error(String(error));
     if (error instanceof ServerException) {
-      /* eslint-disable unicorn/throw-new-error -- errorFn returns a function, not a constructor */
       const ServerError = errorFn({ name: error.code, message: (args: { message: string }) => args.message });
       return err(
         ServerError({ message: error.message })
           .addNotes(`Route: ${route}`)
           .from(errorFn({ name: error.code, message: (_: unknown) => error.message })({ message: error.message }))
       );
-      /* eslint-enable unicorn/throw-new-error */
     }
-    /* eslint-disable unicorn/throw-new-error -- errorFn returns a function, not a constructor */
     const UnexpectedError = errorFn({ name: "INTERNAL_ERROR", message: (args: { message: string }) => args.message });
     return err(
       UnexpectedError({ message: errToReturn.message })
         .addNotes(`Unexpected error in route: ${route}`)
         .from(errorFn({ name: "INTERNAL_ERROR", message: (_: unknown) => errToReturn.message })({ message: errToReturn.message }))
     );
-    /* eslint-enable unicorn/throw-new-error */
   }
 }
-
 export function createAPI<Ctx, TRoutes extends Router<Ctx>>(
   config: {
     router: TRoutes;
@@ -217,23 +193,7 @@ export function createAPI<Ctx, TRoutes extends Router<Ctx>>(
   const { router, context, createContext, plugins = [], middleware = [], eventEmitter } = config;
   const queue = createPendingEventQueue();
 
-  // Resolve context factory - createContext takes precedence over static context
-  // Both factories accept optional RequestInfo for per-request context enrichment
   const contextFactory = createContext ?? ((_requestInfo?: RequestInfo) => context as Ctx);
-
-  const executeRawInternal = (route: string, args: unknown, ctx: Ctx): Promise<Result<unknown>> => {
-    return executeRoute(router, ctx, middleware, route, args, eventEmitter, queue);
-  };
-
-  const execute = async (route: string, args: unknown, requestInfo?: RequestInfo): Promise<Result<unknown>> => {
-    const ctx = contextFactory(requestInfo); // Fresh context per request, with optional request info
-    return executeRawInternal(route, args, ctx);
-  };
-
-  const executeRaw = async (route: string, args: unknown, requestInfo?: RequestInfo): Promise<Result<unknown>> => {
-    const ctx = contextFactory(requestInfo); // Fresh context per request, with optional request info
-    return executeRawInternal(route, args, ctx);
-  };
 
   const initialCtx = contextFactory();
   const state: APIInstanceState<Ctx, TRoutes> = {
@@ -242,8 +202,6 @@ export function createAPI<Ctx, TRoutes extends Router<Ctx>>(
     plugins,
     globalMiddleware: middleware,
     eventEmitter,
-    executeRaw,
-    execute,
   };
 
   const routerProxy = createRouterProxy(state.router, state.ctx, state.globalMiddleware, state.router, eventEmitter, queue) as any;
@@ -254,8 +212,6 @@ export function createAPI<Ctx, TRoutes extends Router<Ctx>>(
       if (prop === "plugins") return target.plugins;
       if (prop === "globalMiddleware") return target.globalMiddleware;
       if (prop === "eventEmitter") return target.eventEmitter;
-      if (prop === "execute") return target.execute.bind(target);
-      if (prop === "executeRaw") return target.executeRaw.bind(target);
       if (prop === "getEvents") return () => target.eventEmitter?.getEventLog() ?? [];
       return (routerProxy as any)[prop];
     },
@@ -266,7 +222,6 @@ export function createPublicAPI<Ctx, TRoutes extends Router<Ctx>>(
   api: APIInstance<Ctx, TRoutes>
 ): APIInstance<Ctx, PublicRouter<TRoutes>> {
   const publicRouter = filterPublicRouter(api.router);
-  // Try to get createContext from the API instance if available
   const createContext = (api as any).createContext;
   return createAPI({
     router: publicRouter as any,
@@ -303,4 +258,3 @@ function filterPublicRouter<TRoutes extends Router<any, any>>(router: TRoutes): 
   }
   return result;
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */

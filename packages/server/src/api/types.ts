@@ -33,9 +33,6 @@ export interface APIInstance<Ctx, TRoutes = Router<Ctx, any>> {
   readonly plugins: import("../types.js").Plugin<Ctx>[];
   readonly globalMiddleware: import("../types.js").Middleware<Ctx>[];
   readonly eventEmitter?: EventEmitterAny;
-
-  execute(route: string, args: unknown, requestInfo?: RequestInfo): Promise<import("@deessejs/fp").Result<unknown>>;
-  executeRaw(route: string, args: unknown, requestInfo?: RequestInfo): Promise<import("@deessejs/fp").Result<unknown>>;
 }
 
 export interface APIConfig<TRoutes extends Router<unknown, any>> {

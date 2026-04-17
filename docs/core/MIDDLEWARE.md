@@ -4,6 +4,12 @@
 
 The middleware system in `@deessejs/server` allows intercepting and modifying requests before they reach handlers. Middleware is applied **globally** via `createAPI()`, enabling cross-cutting concerns like authentication, authorization, logging, and rate limiting.
 
+> **See real implementations:** [@examples/events-example](https://github.com/deessejs/server/tree/main/examples/events-example) contains production-ready middleware patterns for auth, admin, and logging. See `examples/events-example/src/server/routers/users.ts`.
+>
+> **Basic server:** See [@examples/basic](https://github.com/deessejs/server/tree/main/examples/basic) for a minimal server setup with middleware.
+>
+> **Next.js integration:** See [@examples/basic-next](https://github.com/deessejs/server/tree/main/examples/basic-next) for middleware in a Next.js application via `@deessejs/server-next`.
+
 ## Core Concepts
 
 ### Middleware Function
@@ -22,11 +28,11 @@ All middleware is applied globally via `createAPI()`. This ensures consistent be
 type Middleware<Ctx, Args = unknown> = {
   name: string
   args?: Validator<Args>  // Uses Zod, Valibot, ArkType, etc.
-  handler: (ctx: Ctx & { args: Args }, next: () => Result) => Result
-}
-
-type QueryBuilder<Ctx> = {
-  middleware<Args = unknown>(config: Middleware<Ctx, Args>): Middleware<Ctx, Args>
+  handler: (ctx: Ctx, opts: {
+    next: (overrides?: { ctx?: Partial<Ctx> }) => Promise<Result<unknown>>;
+    args: Args;
+    meta: Record<string, unknown>;
+  }) => Promise<Result<unknown>>
 }
 ```
 
@@ -36,24 +42,25 @@ type QueryBuilder<Ctx> = {
 |----------|------|-------------|
 | `name` | `string` | Unique identifier for the middleware |
 | `args` | `Validator` | Optional validator for middleware-specific args |
-| `handler` | `(ctx, next) => Result` | Middleware function that calls `next()` to proceed |
+| `handler` | `(ctx, { next, args, meta }) => Promise<Result>` | Middleware function that calls `next()` to proceed |
 
 > **Note:** Works with Zod, Valibot, ArkType, or any Standard Schema compatible validator.
 
 ### Middleware Context
 
-Middleware receives an extended context with access to:
+Middleware receives the context and an options object with:
 
 - `ctx` - The full context object
-- `ctx.args` - The operation arguments (modifiable)
-- `ctx.headers` - Request headers (Next.js `headers()` abstraction)
-- `ctx.operation` - The operation being executed
-- `ctx.meta` - Temporary storage for passing data between middleware
-- `ctx.isHttpRequest` - Whether this is an HTTP request (for security)
-
-> **Note:** `ctx.headers` is abstracted from Next.js `headers()`, making it testable without a full Next.js server.
+- `next` - Function to proceed to the next middleware/handler. Accepts optional `ctx` overrides.
+- `args` - The operation arguments (from the validated input)
+- `meta` - Metadata about the request (e.g., `meta.userId` for auth, `meta.procedureName` for logging)
 
 ## Usage Examples
+
+> **Quick reference:** Real-world middleware implementations are available in:
+> - [@examples/events-example](https://github.com/deessejs/server/tree/main/examples/events-example/src/server/routers/users.ts) - auth, admin, logging
+> - [@examples/basic](https://github.com/deessejs/server/tree/main/examples/basic) - minimal server setup
+> - [@examples/basic-next](https://github.com/deessejs/server/tree/main/examples/basic-next) - Next.js integration
 
 ### Basic Global Middleware
 
@@ -62,22 +69,22 @@ const { t, createAPI } = defineContext({
   context: { db: myDatabase }
 })
 
-// Define middleware
+// Define middleware using real patterns from events-example
 const authMiddleware = t.middleware({
   name: "auth",
-  handler: async (ctx, next) => {
-    // Check authentication
-    const userId = ctx.headers.get("x-user-id")
+  handler: async (ctx, { next, meta }) => {
+    // User ID is passed via meta (typically set by auth handler)
+    const userId = meta?.userId as number | undefined;
 
     if (!userId) {
-      return err({ code: "UNAUTHORIZED", message: "Missing user ID" })
+      return err(error({
+        name: "UnauthorizedError",
+        message: () => "Not authenticated",
+      })({}));
     }
 
-    // Add user to context
-    ctx.userId = Number(userId)
-
-    // Call next middleware/handler
-    return next()
+    // Extend context with user - use type assertion since user is dynamically added
+    return next({ ctx: { ...ctx, user: { id: userId } } as typeof ctx });
   }
 })
 
@@ -98,12 +105,19 @@ const api = createAPI({
 ```typescript
 const loggingMiddleware = t.middleware({
   name: "logger",
-  handler: async (ctx, next) => {
-    const start = Date.now()
-    const result = await next()
-    const duration = Date.now() - start
-    console.log(`${ctx.operation} completed in ${duration}ms`)
-    return result
+  handler: async (ctx, { next, args, meta }) => {
+    const procedureName = meta?.procedureName as string || "unknown";
+    ctx.logger.log(`[LOGGER] Before ${procedureName} with args:`, args);
+
+    const result = await next({ ctx });
+
+    if (result.ok) {
+      ctx.logger.log(`[LOGGER] ${procedureName} succeeded`);
+    } else {
+      ctx.logger.log(`[LOGGER] ${procedureName} failed:`, result.error);
+    }
+
+    return result;
   }
 })
 
@@ -116,13 +130,18 @@ const api = createAPI({
 ### Error Handling Middleware
 
 ```typescript
+import { error, err } from "@deessejs/fp"
+
 const errorHandlerMiddleware = t.middleware({
   name: "errorHandler",
-  handler: async (ctx, next) => {
+  handler: async (ctx, { next }) => {
     try {
-      return await next()
-    } catch (error) {
-      return err({ code: "INTERNAL_ERROR", message: error.message })
+      return await next({ ctx })
+    } catch (err) {
+      return err(error({
+        name: "InternalError",
+        message: () => err instanceof Error ? err.message : "Unknown error",
+      })({}));
     }
   }
 })
@@ -138,6 +157,47 @@ const api = createAPI({
 Apply multiple middleware to all operations:
 
 ```typescript
+import { error, err } from "@deessejs/fp"
+
+const loggingMiddleware = t.middleware({
+  name: "logger",
+  handler: async (ctx, { next, args, meta }) => {
+    const procedureName = meta?.procedureName as string || "unknown";
+    ctx.logger.log(`[LOGGER] Before ${procedureName} with args:`, args);
+    const result = await next({ ctx });
+    ctx.logger.log(`[LOGGER] ${procedureName} completed:`, result.ok ? "success" : "error");
+    return result;
+  }
+});
+
+const errorHandlerMiddleware = t.middleware({
+  name: "errorHandler",
+  handler: async (ctx, { next }) => {
+    try {
+      return await next({ ctx });
+    } catch (err) {
+      return err(error({
+        name: "InternalError",
+        message: () => err instanceof Error ? err.message : "Unknown error",
+      })({}));
+    }
+  }
+});
+
+const authMiddleware = t.middleware({
+  name: "auth",
+  handler: async (ctx, { next, meta }) => {
+    const userId = meta?.userId as number | undefined;
+    if (!userId) {
+      return err(error({
+        name: "UnauthorizedError",
+        message: () => "Not authenticated",
+      })({}));
+    }
+    return next({ ctx: { ...ctx, user: { id: userId } } as typeof ctx });
+  }
+});
+
 const api = createAPI({
   router: t.router({
     users: {
@@ -147,41 +207,11 @@ const api = createAPI({
   }),
   middleware: [
     // Logging middleware (runs first)
-    t.middleware({
-      name: "logger",
-      handler: async (ctx, next) => {
-        const start = Date.now()
-        const result = await next()
-        const duration = Date.now() - start
-        console.log(`${ctx.operation} completed in ${duration}ms`)
-        return result
-      }
-    }),
-
+    loggingMiddleware,
     // Error handling middleware (runs second)
-    t.middleware({
-      name: "errorHandler",
-      handler: async (ctx, next) => {
-        try {
-          return await next()
-        } catch (error) {
-          return err({ code: "INTERNAL_ERROR", message: error.message })
-        }
-      }
-    }),
-
+    errorHandlerMiddleware,
     // Auth middleware (runs third)
-    t.middleware({
-      name: "auth",
-      handler: async (ctx, next) => {
-        const userId = ctx.headers.get("x-user-id")
-        if (!userId) {
-          return err({ code: "UNAUTHORIZED", message: "Missing user ID" })
-        }
-        ctx.userId = Number(userId)
-        return next()
-      }
-    }),
+    authMiddleware,
   ]
 })
 ```
@@ -192,6 +222,7 @@ Create configurable middleware with args:
 
 ```typescript
 import { z } from "zod"
+import { error, err } from "@deessejs/fp"
 
 const rateLimitMiddleware = t.middleware({
   name: "rateLimit",
@@ -199,31 +230,28 @@ const rateLimitMiddleware = t.middleware({
     maxRequests: z.number().default(100),
     windowMs: z.number().default(60000),
   }),
-  handler: async (ctx, next) => {
-    const key = ctx.headers.get("x-forwarded-for") || "unknown"
+  handler: async (ctx, { next, args, meta }) => {
+    const clientId = meta?.clientId as string || "unknown";
     const now = Date.now()
-    const { maxRequests, windowMs } = ctx.args
+    const { maxRequests, windowMs } = args
 
-    let record = rateLimitStore.get(key)
+    let record = rateLimitStore.get(clientId)
 
     if (!record || record.resetAt < now) {
       record = { count: 0, resetAt: now + windowMs }
-      rateLimitStore.set(key, record)
+      rateLimitStore.set(clientId, record)
     }
 
     record.count++
 
     if (record.count > maxRequests) {
-      return err({
-        code: "RATE_LIMITED",
-        message: `Rate limit exceeded. Try again in ${Math.ceil((record.resetAt - now) / 1000)} seconds`,
-      })
+      return err(error({
+        name: "RateLimitError",
+        message: () => `Rate limit exceeded. Try again in ${Math.ceil((record.resetAt - now) / 1000)} seconds`,
+      })({}));
     }
 
-    ctx.headers.set("x-rate-limit-remaining", String(maxRequests - record.count))
-    ctx.headers.set("x-rate-limit-reset", String(record.resetAt))
-
-    return next()
+    return next({ ctx });
   }
 })
 
@@ -235,21 +263,25 @@ const api = createAPI({
 
 ### Server-Side Only Middleware
 
-For `internalQuery` and `internalMutation`, add an extra security layer:
+For `internalQuery` and `internalMutation`, use meta information to detect non-server calls:
 
 ```typescript
+import { error, err } from "@deessejs/fp"
+
 const serverOnlyMiddleware = t.middleware({
   name: "serverOnly",
-  handler: async (ctx, next) => {
-    // Verify this is a server-side call, not HTTP
-    if (ctx.isHttpRequest) {
-      return err({
-        code: "FORBIDDEN",
-        message: "This operation is only available server-side"
-      })
+  handler: async (ctx, { next, meta }) => {
+    // Check if this is a direct server call via meta
+    const isServerCall = meta?.isServer === true;
+
+    if (!isServerCall) {
+      return err(error({
+        name: "ForbiddenError",
+        message: () => "This operation is only available server-side",
+      })({}));
     }
 
-    return next()
+    return next({ ctx });
   }
 })
 
@@ -272,10 +304,10 @@ In Serverless environments (Vercel, Cloudflare), middleware latency directly aff
 // Avoid: Multiple async DB calls in middleware
 const slowMiddleware = t.middleware({
   name: "slow",
-  handler: async (ctx, next) => {
+  handler: async (ctx, { next }) => {
     await ctx.db.config.get("setting1")  // DB call
     await ctx.db.config.get("setting2")  // Another DB call
-    return next()
+    return next({ ctx })
   }
 })
 
@@ -286,44 +318,82 @@ const slowMiddleware = t.middleware({
 
 > **Best Practice:** Use **Plugins** for resource injection (DB, Config) and **Middleware** only for control logic (Auth, Rate Limit, Caching).
 
-## Composing Middleware
+## Per-Procedure Middleware with `.use()`
 
-Build reusable middleware combinations:
+Middleware can be applied to individual procedures using `.use()`:
 
 ```typescript
-// middleware/composed.ts
-export const withAuth = t.middleware({
-  name: "withAuth",
-  handler: async (ctx, next) => {
-    const userId = ctx.headers.get("x-user-id")
+import { error, err } from "@deessejs/fp"
+
+// Define middleware
+const authMiddleware = t.middleware({
+  name: "auth",
+  handler: async (ctx, { next, meta }) => {
+    const userId = meta?.userId as number | undefined;
     if (!userId) {
-      return err({ code: "UNAUTHORIZED", message: "Authentication required" })
+      return err(error({
+        name: "UnauthorizedError",
+        message: () => "Not authenticated",
+      })({}));
     }
-    ctx.userId = Number(userId)
-    return next()
-  }
-})
+    return next({ ctx: { ...ctx, user: { id: userId } } as typeof ctx });
+  },
+});
 
-export const withLogging = t.middleware({
-  name: "withLogging",
-  handler: async (ctx, next) => {
-    console.log(`[${ctx.operation}] Starting...`)
-    const result = await next()
-    console.log(`[${ctx.operation}] Completed:`, result.ok ? "success" : "error")
-    return result
-  }
-})
+const adminMiddleware = t.middleware({
+  name: "admin",
+  handler: async (ctx, { next }) => {
+    const user = (ctx as any).user;
+    if (!user?.isAdmin) {
+      return err(error({
+        name: "ForbiddenError",
+        message: () => "Admin access required",
+      })({}));
+    }
+    return next({ ctx });
+  },
+});
 
-// Apply all global middleware at once
-const api = createAPI({
-  router: t.router({ ... }),
-  middleware: [withAuth, withLogging]
+const loggingMiddleware = t.middleware({
+  name: "logger",
+  handler: async (ctx, { next, args, meta }) => {
+    const procedureName = meta?.procedureName as string || "unknown";
+    ctx.logger.log(`[LOGGER] Before ${procedureName}`);
+    const result = await next({ ctx });
+    ctx.logger.log(`[LOGGER] ${procedureName} completed`);
+    return result;
+  },
+});
+
+// Apply middleware to a specific query
+const getUser = t.query({
+  handler: async (ctx) => { ... },
+}).use(authMiddleware);
+
+// Chain multiple middleware with .use()
+const adminListUsers = t.query({
+  handler: async (ctx) => { ... },
 })
+  .use(loggingMiddleware)
+  .use(authMiddleware)
+  .use(adminMiddleware);
 ```
 
-### Execution Order
+### Execution Order with `.use()`
 
-Middleware executes in the order they are defined:
+Middleware chained with `.use()` executes in order from left to right:
+
+```typescript
+const procedure = t.query({ handler: async (ctx) => { ... } })
+  .use(firstMiddleware)  // 1. Runs first
+  .use(secondMiddleware) // 2. Runs second
+  .use(thirdMiddleware)   // 3. Runs third
+// Handler executes last
+```
+
+### Global Middleware Execution Order
+
+Global middleware applied via `createAPI({ middleware: [...] })` executes in the order defined:
 
 ```typescript
 const api = createAPI({
@@ -333,21 +403,21 @@ const api = createAPI({
     },
   }),
   middleware: [
-    // 1. First middleware
+    // 1. First middleware (outermost)
     t.middleware({
       name: "first",
-      handler: async (ctx, next) => {
+      handler: async (ctx, { next }) => {
         console.log("1. First middleware")
-        return next()
+        return next({ ctx })
       }
     }),
 
     // 2. Second middleware
     t.middleware({
       name: "second",
-      handler: async (ctx, next) => {
+      handler: async (ctx, { next }) => {
         console.log("2. Second middleware")
-        return next()
+        return next({ ctx })
       }
     }),
   ]
@@ -364,11 +434,15 @@ const api = createAPI({
 Middleware can return early to prevent handler execution:
 
 ```typescript
+import { ok, err, error } from "@deessejs/fp"
+
 const cacheMiddleware = t.middleware({
   name: "cache",
-  handler: async (ctx, next) => {
-    // Generate cache key from operation and args
-    const cacheKey = `${ctx.operation}:${JSON.stringify(ctx.args)}`
+  handler: async (ctx, { next, args, meta }) => {
+    const procedureName = meta?.procedureName as string || "unknown";
+
+    // Generate cache key from procedure name and args
+    const cacheKey = `${procedureName}:${JSON.stringify(args)}`
 
     // Check cache
     const cached = await ctx.cache.get(cacheKey)
@@ -378,7 +452,7 @@ const cacheMiddleware = t.middleware({
     }
 
     // Execute handler
-    const result = await next()
+    const result = await next({ ctx })
 
     // Cache successful results
     if (result.ok) {
@@ -395,24 +469,159 @@ const api = createAPI({
 })
 ```
 
+## Reusable Protected Procedures with `withQuery` and `withMutation`
+
+The `withQuery` and `withMutation` helpers from `@deessejs/server` create reusable procedure creators that wrap procedures with middleware. This is useful for creating "protected" queries and mutations that require authentication or authorization.
+
+### Basic Usage
+
+```typescript
+import { withQuery, withMutation } from "@deessejs/server"
+
+// Create a protected query by wrapping with authMiddleware
+const authQuery = withQuery((q) => q.use(authMiddleware));
+
+// Create a protected mutation
+const authMutation = withMutation((m) => m.use(authMiddleware));
+
+// Apply to procedures
+const getCurrentUser = authQuery(
+  t.query({
+    handler: async (ctx) => { ... },
+  })
+);
+
+const updateProfile = authMutation(
+  t.mutation({
+    handler: async (ctx, args) => { ... },
+  })
+);
+```
+
+### Chaining Multiple Middleware
+
+Use `withMutation` composition to chain multiple middleware:
+
+```typescript
+// Admin mutation with auth + admin middleware
+// authMiddleware runs first, then adminMiddleware
+const adminMutation = withMutation((m) =>
+  m.use(adminMiddleware).use(authMiddleware)
+);
+
+// Apply to procedure
+const deleteUser = adminMutation(
+  t.mutation({
+    handler: async (ctx, args) => { ... },
+  })
+);
+```
+
+### withQuery/withMutation Signatures
+
+```typescript
+// Apply middleware to a query directly
+withQuery(query, middleware)
+
+// Apply middleware to a query using curried form
+withQuery((q) => q.use(middleware))
+
+// Apply middleware to a mutation directly
+withMutation(mutation, middleware)
+
+// Apply middleware to a mutation using curried form
+withMutation((m) => m.use(middleware))
+```
+
+### Real Example from events-example
+
+See [@examples/events-example](https://github.com/deessejs/server/tree/main/examples/events-example/src/server/routers/users.ts) for complete middleware implementations including auth, admin, and logging patterns:
+
+From `examples/events-example/src/server/routers/users.ts`:
+
+```typescript
+import { withQuery, withMutation } from "@deessejs/server";
+import { error, err, ok } from "@deessejs/fp";
+
+// Define middleware
+const authMiddleware = t.middleware({
+  name: "auth",
+  handler: async (ctx, { next, meta }) => {
+    const userId = meta?.userId as number | undefined;
+    if (!userId) {
+      return err(error({
+        name: "UnauthorizedError",
+        message: () => "Not authenticated",
+      })({}));
+    }
+    return next({ ctx: { ...ctx, user: { id: userId } } as typeof ctx });
+  },
+});
+
+const adminMiddleware = t.middleware({
+  name: "admin",
+  handler: async (ctx, { next }) => {
+    const user = (ctx as any).user;
+    if (!user?.isAdmin) {
+      return err(error({
+        name: "ForbiddenError",
+        message: () => "Admin access required",
+      })({}));
+    }
+    return next({ ctx });
+  },
+});
+
+// Create reusable protected procedure creators
+const authQuery = withQuery((q) => q.use(authMiddleware));
+const authMutation = withMutation((m) => m.use(authMiddleware));
+const adminMutation = withMutation((m) => m.use(adminMiddleware).use(authMiddleware));
+
+// Use in router
+export const usersRouter = t.router({
+  // Public procedure
+  list: t.query({ handler: async (ctx) => ok([...ctx.db.users]) }),
+
+  // Protected procedures
+  getCurrentUser: authQuery(
+    t.query({
+      handler: async (ctx) => {
+        const user = (ctx as any).user;
+        return ok(ctx.db.users.find((u: any) => u.id === user.id));
+      },
+    })
+  ),
+
+  // Admin-only procedure (requires both auth and admin)
+  adminDeleteUser: adminMutation(
+    t.mutation({
+      handler: async (ctx, args) => { ... },
+    })
+  ),
+});
+```
+
 ## Type Safety
 
 ### Middleware with Typed Context
 
 ```typescript
 type AuthContext = {
-  userId: number | null
-  userRoles: string[]
+  user: { id: number; isAdmin?: boolean } | null
+  logger: { log: (...args: unknown[]) => void }
 }
 
 const authMiddleware = t.middleware({
   name: "auth",
-  handler: async (ctx: AuthContext, next) => {
+  handler: async (ctx: AuthContext, { next, meta }) => {
     // Full type safety for context
-    ctx.userId // number | null
-    ctx.userRoles // string[]
+    const userId = meta?.userId as number | undefined;
+    if (!userId) {
+      return err(error({ name: "UnauthorizedError", message: () => "Not authenticated" })({}));
+    }
+    ctx.user = { id: userId }; // Type-safe assignment
 
-    return next()
+    return next({ ctx });
   }
 })
 ```
@@ -428,12 +637,12 @@ const rateLimitMiddleware = t.middleware({
     maxRequests: z.number().min(1).max(1000),
     windowMs: z.number().min(1000).max(3600000)
   }),
-  handler: async (ctx, next) => {
-    // ctx.args is typed with Zod
-    ctx.args.maxRequests // number
-    ctx.args.windowMs // number
+  handler: async (ctx, { next, args }) => {
+    // args is typed with Zod
+    args.maxRequests // number
+    args.windowMs // number
 
-    return next()
+    return next({ ctx });
   }
 })
 ```
@@ -475,15 +684,20 @@ It's crucial to understand when to use each:
 ### Middleware Error Handling
 
 ```typescript
+import { error, err } from "@deessejs/fp"
+
 const safeMiddleware = t.middleware({
   name: "safe",
-  handler: async (ctx, next) => {
+  handler: async (ctx, { next }) => {
     try {
-      return await next()
-    } catch (error) {
+      return await next({ ctx })
+    } catch (err) {
       // Handle errors gracefully
-      console.error("Middleware error:", error)
-      return err({ code: "MIDDLEWARE_ERROR", message: "An error occurred" })
+      ctx.logger.log("Middleware error:", err)
+      return err(error({
+        name: "MiddlewareError",
+        message: () => "An error occurred in middleware"
+      })({}));
     }
   }
 })
@@ -492,26 +706,35 @@ const safeMiddleware = t.middleware({
 ### Error Propagation
 
 ```typescript
+import { error, err } from "@deessejs/fp"
+
 const authMiddleware = t.middleware({
   name: "auth",
-  handler: async (ctx, next) => {
+  handler: async (ctx, { next, meta }) => {
     // Don't catch errors - let them propagate
     // This allows error handling middleware to handle them
-    return next()
+    const userId = meta?.userId as number | undefined;
+    if (!userId) {
+      return err(error({
+        name: "UnauthorizedError",
+        message: () => "Not authenticated"
+      })({}));
+    }
+    return next({ ctx });
   }
 })
 
 const errorHandlerMiddleware = t.middleware({
   name: "errorHandler",
-  handler: async (ctx, next) => {
+  handler: async (ctx, { next }) => {
     try {
-      return await next()
-    } catch (error) {
+      return await next({ ctx });
+    } catch (err) {
       // Handle any unhandled errors
-      return err({
-        code: "INTERNAL_ERROR",
-        message: error instanceof Error ? error.message : "Unknown error"
-      })
+      return err(error({
+        name: "InternalError",
+        message: () => err instanceof Error ? err.message : "Unknown error"
+      })({}));
     }
   }
 })
@@ -519,7 +742,7 @@ const errorHandlerMiddleware = t.middleware({
 // Use both - auth runs first, then error handler catches any errors
 const api = createAPI({
   router: t.router({ ... }),
-  middleware: [authMiddleware, errorHandlerMiddleware]
+  middleware: [errorHandlerMiddleware, authMiddleware]
 })
 ```
 
@@ -529,34 +752,38 @@ const api = createAPI({
 
 ```typescript
 import { defineContext, createAPI, t } from "@deessejs/server"
-import { ok, err } from "@deessejs/fp" // See /deesse-fp for Result patterns
+import { ok, err, error } from "@deessejs/fp" // See /deesse-fp for Result patterns
 
 describe("authMiddleware", () => {
-  const { t, createAPI } = defineContext({
+  const { t } = defineContext({
     context: { db: mockDb }
   })
 
   const authMiddleware = t.middleware({
     name: "auth",
-    handler: async (ctx, next) => {
-      const userId = ctx.headers.get("x-user-id")
+    handler: async (ctx, { next, meta }) => {
+      const userId = meta?.userId as number | undefined;
       if (!userId) {
-        return err({ code: "UNAUTHORIZED", message: "Missing user ID" })
+        return err(error({
+          name: "UnauthorizedError",
+          message: () => "Missing user ID"
+        })({}));
       }
-      ctx.userId = Number(userId)
-      return next()
+      return next({ ctx: { ...ctx, user: { id: userId } } as typeof ctx });
     }
   })
 
   it("should call next when userId is present", async () => {
     const mockCtx = {
-      headers: new Map([["x-user-id", "123"]]),
       db: mockDb,
+      logger: { log: vi.fn() },
     }
+
+    const mockMeta = { userId: 123 };
 
     const next = vi.fn(() => ok({ id: 1 }))
 
-    const result = await authMiddleware.handler(mockCtx, next)
+    const result = await authMiddleware.handler(mockCtx, { next, args: {}, meta: mockMeta })
 
     expect(next).toHaveBeenCalled()
     expect(result.ok).toBe(true)
@@ -564,17 +791,16 @@ describe("authMiddleware", () => {
 
   it("should return error when userId is missing", async () => {
     const mockCtx = {
-      headers: new Map(),
       db: mockDb,
+      logger: { log: vi.fn() },
     }
 
     const next = vi.fn()
 
-    const result = await authMiddleware.handler(mockCtx, next)
+    const result = await authMiddleware.handler(mockCtx, { next, args: {}, meta: {} })
 
     expect(next).not.toHaveBeenCalled()
     expect(result.ok).toBe(false)
-    expect(result.error.code).toBe("UNAUTHORIZED")
   })
 })
 ```
@@ -591,7 +817,7 @@ describe("API with Middleware", () => {
     const result = await executor.execute("users.get", { id: 1 })
 
     // Check that logging middleware ran
-    expect(console.log).toHaveBeenCalled()
+    expect(logger.log).toHaveBeenCalled()
   })
 })
 ```
@@ -606,18 +832,18 @@ Each middleware should do one thing well:
 // Good: Single responsibility
 const authMiddleware = t.middleware({
   name: "auth",
-  handler: async (ctx, next) => { ... }
+  handler: async (ctx, { next, meta }) => { ... }
 })
 
 const loggingMiddleware = t.middleware({
   name: "logging",
-  handler: async (ctx, next) => { ... }
+  handler: async (ctx, { next }) => { ... }
 })
 
 // Avoid: Multiple responsibilities
 const authAndLoggingMiddleware = t.middleware({
   name: "authAndLogging",
-  handler: async (ctx, next) => {
+  handler: async (ctx, { next, meta }) => {
     // Auth logic...
     // Logging logic...
   }
@@ -640,23 +866,23 @@ const mw = t.middleware({ name: "mw", ... })
 
 ```typescript
 // Good: Explicitly call next or return
-handler: async (ctx, next) => {
-  if (ctx.headers.get("x-skip")) {
-    return next() // Explicitly proceed
+handler: async (ctx, { next, meta }) => {
+  if (meta?.skip) {
+    return next({ ctx }) // Explicitly proceed
   }
-  return next()
+  return next({ ctx })
 }
 
 // Good: Short-circuit when needed
-handler: async (ctx, next) => {
+handler: async (ctx, { next, args }) => {
   const cached = await ctx.cache.get(key)
   if (cached) return ok(cached) // Short-circuit
 
-  return next() // Proceed to handler
+  return next({ ctx }) // Proceed to handler
 }
 
 // Bad: Forgetting to return next
-handler: async (ctx, next) => {
+handler: async (ctx, { next }) => {
   ctx.userId = 123
   next() // Missing return - can cause issues
 }
@@ -666,18 +892,21 @@ handler: async (ctx, next) => {
 
 ```typescript
 // Good: Catch and handle errors
-handler: async (ctx, next) => {
+handler: async (ctx, { next }) => {
   try {
-    return await next()
+    return await next({ ctx })
   } catch (error) {
-    return err({ code: "ERROR", message: error.message })
+    return err(error({
+      name: "Error",
+      message: () => error.message
+    })({}));
   }
 }
 
 // Good: Let errors propagate for centralized handling
-handler: async (ctx, next) => {
+handler: async (ctx, { next, meta }) => {
   // No try-catch - let error handling middleware handle it
-  return next()
+  return next({ ctx });
 }
 ```
 
@@ -688,10 +917,10 @@ Put global middleware in logical order:
 ```typescript
 // Good: Logical order
 middleware: [
-  loggingMiddleware,     // 1. Log first (outermost)
-  errorHandlerMiddleware, // 2. Handle errors
-  rateLimitMiddleware,   // 3. Rate limit
-  authMiddleware,         // 4. Authenticate last (innermost)
+  loggingMiddleware,        // 1. Log first (outermost)
+  errorHandlerMiddleware,   // 2. Handle errors
+  rateLimitMiddleware,       // 3. Rate limit
+  authMiddleware,           // 4. Authenticate last (innermost)
 ]
 ```
 
@@ -701,41 +930,44 @@ middleware: [
 /**
  * Authentication middleware.
  *
- * Reads the `authorization` header and verifies the token.
- * Sets `ctx.userId` and `ctx.userRoles` on successful authentication.
+ * Checks meta.userId for authentication.
+ * Sets ctx.user with the authenticated user on success.
  *
  * @returns Error if:
- * - No authorization header
- * - Invalid token format
- * - Token verification fails
+ * - No userId in meta
+ * - User not found in database
  */
 const authMiddleware = t.middleware({
   name: "auth",
-  handler: async (ctx, next) => { ... }
+  handler: async (ctx, { next, meta }) => { ... }
 })
 ```
 
 ## Common Patterns
 
+> **See live examples:** [@examples/events-example](https://github.com/deessejs/server/tree/main/examples/events-example/src/server/routers/users.ts) demonstrates caching, feature flags, and metrics patterns in real code.
+
 ### Caching Pattern
 
 ```typescript
 import { z } from "zod"
+import { ok, err, error } from "@deessejs/fp"
 
 const cacheMiddleware = t.middleware({
   name: "cache",
   args: z.object({
     ttl: z.number().default(300000)
   }),
-  handler: async (ctx, next) => {
-    const key = `${ctx.operation}:${JSON.stringify(ctx.args)}`
+  handler: async (ctx, { next, args, meta }) => {
+    const procedureName = meta?.procedureName as string || "unknown";
+    const key = `${procedureName}:${JSON.stringify(args)}`
 
     const cached = await ctx.cache.get(key)
     if (cached) return ok(cached)
 
-    const result = await next()
+    const result = await next({ ctx })
     if (result.ok) {
-      await ctx.cache.set(key, result.value, ctx.args.ttl)
+      await ctx.cache.set(key, result.value, args.ttl)
     }
 
     return result
@@ -752,23 +984,24 @@ const api = createAPI({
 
 ```typescript
 import { z } from "zod"
+import { err, error } from "@deessejs/fp"
 
 const featureFlagMiddleware = t.middleware({
   name: "featureFlag",
   args: z.object({
     flag: z.string()
   }),
-  handler: async (ctx, next) => {
-    const enabled = await ctx.featureFlags.isEnabled(ctx.args.flag)
+  handler: async (ctx, { next, args, meta }) => {
+    const enabled = await ctx.featureFlags.isEnabled(args.flag)
 
     if (!enabled) {
-      return err({
-        code: "FEATURE_DISABLED",
-        message: `Feature '${ctx.args.flag}' is not enabled`
-      })
+      return err(error({
+        name: "FeatureDisabledError",
+        message: () => `Feature '${args.flag}' is not enabled`
+      })({}));
     }
 
-    return next()
+    return next({ ctx });
   }
 })
 
@@ -783,20 +1016,21 @@ const api = createAPI({
 ```typescript
 const metricsMiddleware = t.middleware({
   name: "metrics",
-  handler: async (ctx, next) => {
+  handler: async (ctx, { next, meta }) => {
+    const procedureName = meta?.procedureName as string || "unknown";
     const start = Date.now()
 
     try {
-      const result = await next()
+      const result = await next({ ctx })
 
       // Record success metric
-      await ctx.metrics.increment(`${ctx.operation}.success`)
-      await ctx.metrics.timing(`${ctx.operation}.duration`, Date.now() - start)
+      await ctx.metrics.increment(`${procedureName}.success`)
+      await ctx.metrics.timing(`${procedureName}.duration`, Date.now() - start)
 
       return result
     } catch (error) {
       // Record failure metric
-      await ctx.metrics.increment(`${ctx.operation}.error`)
+      await ctx.metrics.increment(`${procedureName}.error`)
       throw error
     }
   }

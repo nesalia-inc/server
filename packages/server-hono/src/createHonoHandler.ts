@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { HTTPClient } from "./types.js";
 import { getHTTPStatus } from "./errors.js";
-import type { Error } from "@deessejs/fp";
+import type { Error, Result } from "@deessejs/fp";
 
 interface RequestInfo {
   headers?: Record<string, string>;
@@ -25,6 +25,24 @@ function isMutationMethod(method: string): boolean {
 }
 
 /**
+ * Gets a procedure function from the client proxy using a dot-separated path
+ */
+function getProcedure(client: unknown, pathParts: string[]): ((args: unknown) => Promise<Result<unknown>>) | undefined {
+  let current: unknown = client;
+  for (const part of pathParts) {
+    if (current === null || current === undefined) {
+      return undefined;
+    }
+    const value = (current as Record<string, unknown>)[part];
+    if (value === undefined) {
+      return undefined;
+    }
+    current = value;
+  }
+  return typeof current === "function" ? (current as (args: unknown) => Promise<Result<unknown>>) : undefined;
+}
+
+/**
  * Creates a Hono handler from a deesse API client
  */
 export function createHonoHandler(client: HTTPClient): Hono {
@@ -35,7 +53,7 @@ export function createHonoHandler(client: HTTPClient): Hono {
   app.all("/api/:path{.*}", async (c) => {
     // Get the path without the /api/ prefix
     const rawPath = c.req.param("path") || "";
-    const path = normalizePath(rawPath);
+    const normalizedPath = normalizePath(rawPath);
     const method = c.req.method;
 
     // Determine args based on method
@@ -55,15 +73,17 @@ export function createHonoHandler(client: HTTPClient): Hono {
       args = queryParams as Record<string, unknown>;
     }
 
-    const requestInfo: RequestInfo = {
-      headers: c.req.header(),
-      method: c.req.method,
-      url: c.req.url,
-    };
+    // Get the procedure function using the proxy-based access
+    const pathParts = normalizedPath.split(".");
+    const procedure = getProcedure(client, pathParts);
 
-    // Cast to any to avoid TypeScript confusion with intersection of APIInstance & RouterProxy
-    // The execute method signature is correctly defined in APIInstance
-    const result = await (client as { execute(route: string, args: unknown, requestInfo?: RequestInfo): Promise<{ ok: boolean; value?: unknown; error?: Error }> }).execute(path, args, requestInfo);
+    if (!procedure) {
+      const notFoundResult = { ok: false as const, error: { name: "ROUTE_NOT_FOUND", message: `Route not found: ${normalizedPath}` } };
+      return c.json(notFoundResult, 404);
+    }
+
+    // Call the procedure using proxy access (direct method call)
+    const result = await procedure(args);
 
     if (result.ok) {
       return c.json(result);

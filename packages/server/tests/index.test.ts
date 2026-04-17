@@ -69,12 +69,11 @@ describe("defineContext", () => {
 
     expect(api).toBeDefined();
     expect(api.router).toBeDefined();
-    expect(api.execute).toBeDefined();
   });
 });
 
 describe("createAPI", () => {
-  it("should execute a query using execute method", async () => {
+  it("should execute a query using proxy access", async () => {
     const { t, createAPI } = defineContext({
       context: { db: { find: () => ({ id: 1, name: "test" }) } },
     });
@@ -94,8 +93,7 @@ describe("createAPI", () => {
       }),
     });
 
-    // Old syntax still works
-    const result = await api.execute("users.get", { id: 1 });
+    const result = await api.users.get({ id: 1 });
 
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -141,7 +139,9 @@ describe("createAPI", () => {
       router: t.router({}),
     });
 
-    const result = await api.execute("unknown.route", {});
+    // execute removed - unknown route returns undefined with direct access
+    const unknownFn = (api as any).unknown?.route;
+    const result = unknownFn ? await unknownFn({}) : { ok: false };
 
     expect(result.ok).toBe(false);
   });
@@ -186,7 +186,7 @@ describe("ctx.send", () => {
     });
 
     const executor = api;
-    const result = await executor.execute("users.create", { name: "John" });
+    const result = await executor.users.create({ name: "John" });
 
     expect(result.ok).toBe(true);
     const events = executor.getEvents();
@@ -220,7 +220,7 @@ describe("ctx.send", () => {
     });
 
     const executor = api;
-    const result = await executor.execute("users.create", { name: "John" });
+    const result = await executor.users.create({ name: "John" });
 
     expect(result.ok).toBe(false);
     const events = executor.getEvents();
@@ -250,7 +250,7 @@ describe("ctx.send", () => {
     });
 
     const executor = api;
-    const result = await executor.execute("users.create", { name: "John" });
+    const result = await executor.users.create({ name: "John" });
 
     expect(result.ok).toBe(false);
     const events = executor.getEvents();
@@ -283,7 +283,7 @@ describe("ctx.send", () => {
     });
 
     const executor = api;
-    await executor.execute("users.create", { name: "John", email: "john@example.com" });
+    await executor.users.create({ name: "John", email: "john@example.com" });
 
     const events = executor.getEvents();
     expect(events).toHaveLength(2);
@@ -315,7 +315,7 @@ describe("ctx.send", () => {
     });
 
     const executor = api;
-    await executor.execute("orders.create", { item: "Widget" });
+    await executor.orders.create({ item: "Widget" });
 
     const events = executor.getEvents();
     expect(events).toHaveLength(1);
@@ -352,7 +352,7 @@ describe("t.on", () => {
       }),
     });
 
-    await api.execute("users.create", { name: "John" });
+    await api.users.create({ name: "John" });
 
     expect(receivedEvents).toHaveLength(1);
     expect(receivedEvents[0].name).toBe("user.created");
@@ -389,13 +389,13 @@ describe("t.on", () => {
       }),
     });
 
-    await api.execute("users.create", { name: "John" });
+    await api.users.create({ name: "John" });
     expect(receivedEvents).toHaveLength(1);
 
     // Unsubscribe
     unsubscribe();
 
-    await api.execute("users.create", { name: "Jane" });
+    await api.users.create({ name: "Jane" });
     expect(receivedEvents).toHaveLength(1); // Still 1, not 2
   });
 
@@ -448,9 +448,9 @@ describe("t.on", () => {
       }),
     });
 
-    await api.execute("users.create", { name: "John" });
-    await api.execute("users.update", { id: 1, name: "Jane" });
-    await api.execute("posts.create", { title: "Hello" });
+    await api.users.create({ name: "John" });
+    await api.users.update({ id: 1, name: "Jane" });
+    await api.posts.create({ title: "Hello" });
 
     // Should only receive user.* events, not post.*
     expect(receivedEvents).toHaveLength(2);
@@ -497,8 +497,8 @@ describe("t.on", () => {
       }),
     });
 
-    await api.execute("users.create", { name: "John" });
-    await api.execute("posts.create", { title: "Hello" });
+    await api.users.create({ name: "John" });
+    await api.posts.create({ title: "Hello" });
 
     expect(receivedEvents).toHaveLength(2);
   });

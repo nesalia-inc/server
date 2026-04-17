@@ -18,8 +18,8 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       '@deessejs/server':
-        specifier: ^0.0.0
-        version: 0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76)
+        specifier: workspace:*
+        version: link:../../packages/server
       zod:
         specifier: ^3.0.0
         version: 3.25.76
@@ -31,20 +31,20 @@ importers:
   examples/basic-next:
     dependencies:
       '@deessejs/client':
-        specifier: ^0.0.1
-        version: 0.0.1(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76))
+        specifier: workspace:*
+        version: link:../../packages/client
       '@deessejs/client-react':
-        specifier: ^0.0.0
-        version: 0.0.0(@deessejs/client@0.0.1(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76)))(react@18.3.1)
+        specifier: workspace:*
+        version: link:../../packages/client-react
       '@deessejs/fp':
         specifier: ^3.0.0
         version: 3.0.0
       '@deessejs/server':
-        specifier: ^0.0.0
-        version: 0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76)
+        specifier: workspace:*
+        version: link:../../packages/server
       '@deessejs/server-next':
-        specifier: ^0.0.0
-        version: 0.0.0(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76))(next@15.5.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
+        specifier: workspace:*
+        version: link:../../packages/server-next
       next:
         specifier: ^14.0.0 || ^15.0.0
         version: 15.5.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -93,6 +93,25 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@20.19.39)(jsdom@25.0.1)
 
+  examples/middleware-example:
+    dependencies:
+      '@deessejs/fp':
+        specifier: ^3.0.0
+        version: 3.0.0
+      '@deessejs/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      zod:
+        specifier: ^3.0.0
+        version: 3.25.76
+    devDependencies:
+      tsx:
+        specifier: ^4.0.0
+        version: 4.21.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/client:
     dependencies:
       '@deessejs/fp':
@@ -112,8 +131,8 @@ importers:
   packages/client-react:
     dependencies:
       '@deessejs/client':
-        specifier: ^0.0.0
-        version: 0.0.0(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@4.3.6))
+        specifier: workspace:*
+        version: link:../client
       '@deessejs/fp':
         specifier: ^3.0.0
         version: 3.0.0
@@ -438,36 +457,8 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
-  '@deessejs/client-react@0.0.0':
-    resolution: {integrity: sha512-3/RS7fd9O0QBHgTrFiYmG6htf51SaQ0axvJFE+itDr5k7Ic1eJqCgEiVrA7c5uDtW+CIHB1FFxSz2GO5GmqUcg==}
-    peerDependencies:
-      '@deessejs/client': '*'
-      react: ^18.0.0
-
-  '@deessejs/client@0.0.0':
-    resolution: {integrity: sha512-aqxn1hBT363Qkv/UhFnO02CghP3FAdMTCFcyR0ntFEKPTHf9Yx1+or4vPi72unmITJz1x2lMPMZVPMsnn94ujQ==}
-    peerDependencies:
-      '@deessejs/server': '*'
-
-  '@deessejs/client@0.0.1':
-    resolution: {integrity: sha512-VTdqFEZpL0sTuq4YAHVa0figgLh3LXT6A9pFdFA5XxCWF7nGDjbv2H0YkZhtERQUyxPNFTwlsNO4b6pbyBIiXg==}
-    peerDependencies:
-      '@deessejs/server': '*'
-
   '@deessejs/fp@3.0.0':
     resolution: {integrity: sha512-sFSmCoRtDJFn/teZs9c1aU6Icgw7IaL9vrplgvS+tD9aGfo6xiVMb6pFAtAf1Mo3eZfRkBIsd5D2DWKrp4Aqzg==}
-
-  '@deessejs/server-next@0.0.0':
-    resolution: {integrity: sha512-jqJmmrDD2W/8m2umi8w187eGQjgRG0epodjpCpE1phFtTILqcU2f1q9OGUoi199w4bu9REJ8YmR0DXcv3l/eaw==}
-    peerDependencies:
-      '@deessejs/server': '*'
-      next: ^14.0.0 || ^15.0.0
-
-  '@deessejs/server@0.0.0':
-    resolution: {integrity: sha512-qiJCpwa9zZgZaqy3KsVU3TknKTXQH04qA+hXPunyekOp5cdSHInV1Up1n0Nh3R0dG5I8XLiGblxZn16es9Z/vQ==}
-    peerDependencies:
-      '@deessejs/fp': '*'
-      zod: ^3.0.0
 
   '@emnapi/runtime@1.9.2':
     resolution: {integrity: sha512-3U4+MIWHImeyu1wnmVygh5WlgfYDtyf0k8AbLhMFxOipihf6nrWC4syIm/SwEeec0mNSafiiNnMJwbza/Is6Lw==}
@@ -3426,41 +3417,8 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
-  '@deessejs/client-react@0.0.0(@deessejs/client@0.0.1(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76)))(react@18.3.1)':
-    dependencies:
-      '@deessejs/client': 0.0.1(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76))
-      '@tanstack/react-query': 5.97.0(react@18.3.1)
-      react: 18.3.1
-
-  '@deessejs/client@0.0.0(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@4.3.6))':
-    dependencies:
-      '@deessejs/fp': 3.0.0
-      '@deessejs/server': 0.0.0(@deessejs/fp@3.0.0)(zod@4.3.6)
-
-  '@deessejs/client@0.0.1(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76))':
-    dependencies:
-      '@deessejs/fp': 3.0.0
-      '@deessejs/server': 0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76)
-
   '@deessejs/fp@3.0.0':
     dependencies:
-      zod: 4.3.6
-
-  '@deessejs/server-next@0.0.0(@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76))(next@15.5.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
-    dependencies:
-      '@deessejs/server': 0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76)
-      '@deessejs/server-hono': link:packages/server-hono
-      hono: 4.12.12
-      next: 15.5.15(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-
-  '@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@3.25.76)':
-    dependencies:
-      '@deessejs/fp': 3.0.0
-      zod: 3.25.76
-
-  '@deessejs/server@0.0.0(@deessejs/fp@3.0.0)(zod@4.3.6)':
-    dependencies:
-      '@deessejs/fp': 3.0.0
       zod: 4.3.6
 
   '@emnapi/runtime@1.9.2':

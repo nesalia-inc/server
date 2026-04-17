@@ -1,0 +1,20 @@
+{
+  "name": "@deessejs/server-example-middleware",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server/main.ts",
+    "start": "tsx src/server/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deessejs/fp": "^3.0.0",
+    "@deessejs/server": "workspace:*",
+    "zod": "^3.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
